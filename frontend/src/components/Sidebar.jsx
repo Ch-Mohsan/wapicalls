@@ -48,8 +48,8 @@ function Icon({ name, className }) {
 
 function Sidebar() {
   return (
-    <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 border-r border-secondary/40 bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/60 md:block">
-      <div className="flex h-14 items-center gap-2 border-b border-secondary/40 px-4">
+    <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 border-r border-accent/40 bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/60 md:block">
+      <div className="flex h-14 items-center gap-2 border-b border-accent/40 px-4">
         <div className="h-7 w-7 rounded-md bg-gradient-to-br from-primary to-accent" />
         <span className="text-sm font-semibold tracking-tight text-primary">SellSynth</span>
       </div>
@@ -60,22 +60,22 @@ function Sidebar() {
             to={item.to}
             className={({ isActive }) => [
               'group inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors',
-              isActive ? 'bg-secondary/30 text-primary' : 'text-slate-700 hover:bg-secondary/20 hover:text-primary'
+              isActive ? 'bg-accent/30 text-primary' : 'text-slate-700 hover:bg-accent/20 hover:text-primary'
             ].join(' ')}
           >
-            <Icon name={item.icon} className="h-4 w-4 text-slate-500 group-[.bg-secondary\/30]:text-primary group-hover:text-primary" />
+            <Icon name={item.icon} className="h-4 w-4 text-slate-500 group-[.bg-accent\/30]:text-primary group-hover:text-primary" />
             <span>{item.label}</span>
           </NavLink>
         ))}
       </nav>
-      <div className="absolute bottom-0 left-0 right-0 border-t border-secondary/40 p-3">
+      <div className="absolute bottom-0 left-0 right-0 border-t border-accent/40 p-3">
         <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-full bg-secondary/40" />
+          <div className="h-8 w-8 rounded-full bg-accent/40" />
           <div className="flex-1">
             <div className="text-sm font-medium text-primary">John Doe</div>
             <div className="text-xs text-slate-500">Free plan</div>
           </div>
-          <NavLink to="/settings" className="rounded-md border border-secondary/40 px-2 py-1 text-xs text-primary hover:bg-secondary/20">Profile</NavLink>
+          <NavLink to="/settings" className="rounded-md border border-accent/40 px-2 py-1 text-xs text-primary hover:bg-accent/20">Profile</NavLink>
         </div>
       </div>
     </aside>
