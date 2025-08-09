@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
-import { setAuthToken, ApiClient } from './apiClient.js'
+import { setAuthToken } from './apiClient.js'
 
 const AuthContext = createContext(null)
 
@@ -13,20 +13,21 @@ export function AuthProvider({ children }) {
     if (saved) {
       setToken(saved)
       setAuthToken(saved)
+      setUser((prev) => prev ?? { id: 'demo-user', email: 'demo@example.com', name: 'Demo User' })
     }
     setLoading(false)
   }, [])
 
   const login = useCallback(async (credentials) => {
-    const res = await ApiClient.post('/auth/login', credentials)
-    const newToken = res?.token
-    if (newToken) {
-      setToken(newToken)
-      setAuthToken(newToken)
-      localStorage.setItem('auth_token', newToken)
-    }
-    setUser(res?.user || null)
-    return res
+    // Mock auth: pretend to call API, then set token and user
+    await new Promise((r) => setTimeout(r, 300))
+    const newToken = 'demo_token'
+    setToken(newToken)
+    setAuthToken(newToken)
+    localStorage.setItem('auth_token', newToken)
+    const demoUser = { id: 'demo-user', email: credentials?.email ?? 'demo@example.com', name: 'Demo User' }
+    setUser(demoUser)
+    return { token: newToken, user: demoUser }
   }, [])
 
   const logout = useCallback(() => {
