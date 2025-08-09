@@ -1,7 +1,16 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
-import { ApiClient } from './apiClient.js'
 
 const LeadsContext = createContext(null)
+
+const DUMMY = Array.from({ length: 24 }).map((_, i) => ({
+  id: `DL${100 + i}`,
+  name: ['Ava Smith', 'Liam Johnson', 'Olivia Brown', 'Noah Davis'][i % 4],
+  email: `dummy${i}@example.com`,
+  phone: `+1 (555) 100-${String(1000 + i).slice(1)}`,
+  status: ['New', 'Contacted', 'Qualified', 'Lost'][i % 4],
+  score: [72, 35, 88, 55][i % 4],
+  createdAt: `2025-07-${(i % 28) + 1}`,
+}))
 
 export function LeadsProvider({ children }) {
   const [leads, setLeads] = useState([])
@@ -12,22 +21,21 @@ export function LeadsProvider({ children }) {
     setLoading(true)
     setError(null)
     try {
-      const data = await ApiClient.get('/leads')
-      if (Array.isArray(data)) setLeads(data)
-      else setLeads(data?.items || [])
+      await new Promise((r) => setTimeout(r, 200))
+      setLeads(DUMMY)
     } catch (err) {
       setError(err)
-      // local fallback sample when backend not ready
-      setLeads([])
+      setLeads(DUMMY)
     } finally {
       setLoading(false)
     }
   }, [])
 
   const createLead = useCallback(async (payload) => {
-    const res = await ApiClient.post('/leads', payload)
-    setLeads((prev) => [res, ...prev])
-    return res
+    await new Promise((r) => setTimeout(r, 200))
+    const newLead = { id: `DL${Math.random().toString(36).slice(2, 8)}`, createdAt: new Date().toISOString().slice(0,10), status: 'New', score: 0, ...payload }
+    setLeads((prev) => [newLead, ...prev])
+    return newLead
   }, [])
 
   const value = useMemo(() => ({ leads, setLeads, loading, error, loadLeads, createLead }), [leads, loading, error, loadLeads, createLead])
