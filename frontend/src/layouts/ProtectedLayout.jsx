@@ -1,9 +1,9 @@
 import React from 'react'
 import DashboardLayout from './DashboardLayout.jsx'
 import { useAuth } from '../store/AuthContext.jsx'
-import { Navigate, useLocation } from 'react-router-dom'
+import { Navigate, useLocation, Outlet } from 'react-router-dom'
 
-function ProtectedLayout({ children }) {
+function ProtectedLayout() {
   const { token, loading } = useAuth()
   const location = useLocation()
 
@@ -11,7 +11,9 @@ function ProtectedLayout({ children }) {
   if (!token) return <Navigate to="/login" replace state={{ from: location }} />
 
   return (
-    <DashboardLayout>{children}</DashboardLayout>
+    <DashboardLayout>
+      <Outlet />
+    </DashboardLayout>
   )
 }
 
