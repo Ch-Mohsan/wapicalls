@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react'
 import Card from '../components/Card.jsx'
 import Badge from '../components/Badge.jsx'
 import { Table } from '../components/Table.jsx'
+import { useLeads } from '../store/LeadsContext.jsx'
 
 const MOCK_LEADS = Array.from({ length: 28 }).map((_, i) => ({
   id: `L${1000 + i}`,
@@ -17,6 +18,9 @@ const MOCK_LEADS = Array.from({ length: 28 }).map((_, i) => ({
 }))
 
 function Leads() {
+  const leadsCtx = useLeads()
+  const data = leadsCtx?.leads?.length ? leadsCtx.leads : MOCK_LEADS
+
   const [query, setQuery] = useState('')
   const [status, setStatus] = useState('')
   const [selected, setSelected] = useState(new Set())
@@ -24,11 +28,11 @@ function Leads() {
   const pageSize = 8
 
   const filtered = useMemo(() => {
-    return MOCK_LEADS.filter((l) =>
-      (!query || l.name.toLowerCase().includes(query.toLowerCase()) || l.email.includes(query)) &&
+    return data.filter((l) =>
+      (!query || (l.name || '').toLowerCase().includes(query.toLowerCase()) || (l.email || '').includes(query)) &&
       (!status || l.status === status)
     )
-  }, [query, status])
+  }, [query, status, data])
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize))
   const paged = filtered.slice((page - 1) * pageSize, page * pageSize)
