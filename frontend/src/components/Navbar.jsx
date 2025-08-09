@@ -8,7 +8,7 @@ function Navbar({ onMenuClick }) {
         <button onClick={onMenuClick} className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-accent/40 text-primary hover:bg-accent/20 md:hidden" aria-label="Open menu">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" x2="21" y1="6" y2="6"/><line x1="3" x2="21" y1="12" y2="12"/><line x1="3" x2="21" y1="18" y2="18"/></svg>
         </button>
-        <Link to="/" className="flex items-center gap-2">
+        <Link to="/dashboard" className="flex items-center gap-2">
           <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-accent" />
           <span className="font-semibold tracking-tight text-primary">SellSynth</span>
         </Link>
