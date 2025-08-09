@@ -1,13 +1,14 @@
 import React from 'react'
+import { NavLink } from 'react-router-dom'
 
 const navItems = [
-  { label: 'Dashboard', icon: 'home' },
-  { label: 'Leads', icon: 'users' },
-  { label: 'Campaigns', icon: 'target' },
-  { label: 'Scripts', icon: 'file-text' },
-  { label: 'Analytics', icon: 'chart' },
-  { label: 'Schedule', icon: 'calendar' },
-  { label: 'Settings', icon: 'settings' },
+  { label: 'Dashboard', icon: 'home', to: '/' },
+  { label: 'Leads', icon: 'users', to: '/leads' },
+  { label: 'Campaigns', icon: 'target', to: '/campaigns' },
+  { label: 'Scripts', icon: 'file-text', to: '/scripts' },
+  { label: 'Analytics', icon: 'chart', to: '/analytics' },
+  { label: 'Schedule', icon: 'calendar', to: '/schedule' },
+  { label: 'Settings', icon: 'settings', to: '/settings' },
 ]
 
 function Icon({ name, className }) {
@@ -47,27 +48,34 @@ function Icon({ name, className }) {
 
 function Sidebar() {
   return (
-    <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 border-r bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/60 md:block">
-      <div className="flex h-14 items-center gap-2 border-b px-4">
-        <div className="h-7 w-7 rounded-md bg-gradient-to-br from-blue-600 to-cyan-500" />
-        <span className="text-sm font-semibold tracking-tight">SellSynth</span>
+    <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 border-r border-secondary/40 bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/60 md:block">
+      <div className="flex h-14 items-center gap-2 border-b border-secondary/40 px-4">
+        <div className="h-7 w-7 rounded-md bg-gradient-to-br from-primary to-accent" />
+        <span className="text-sm font-semibold tracking-tight text-primary">SellSynth</span>
       </div>
       <nav className="flex flex-col gap-1 p-2">
         {navItems.map((item) => (
-          <button key={item.label} className="group inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-900">
-            <Icon name={item.icon} className="h-4 w-4 text-slate-500 group-hover:text-slate-700" />
+          <NavLink
+            key={item.label}
+            to={item.to}
+            className={({ isActive }) => [
+              'group inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors',
+              isActive ? 'bg-secondary/30 text-primary' : 'text-slate-700 hover:bg-secondary/20 hover:text-primary'
+            ].join(' ')}
+          >
+            <Icon name={item.icon} className="h-4 w-4 text-slate-500 group-[.bg-secondary\/30]:text-primary group-hover:text-primary" />
             <span>{item.label}</span>
-          </button>
+          </NavLink>
         ))}
       </nav>
-      <div className="absolute bottom-0 left-0 right-0 border-t p-3">
+      <div className="absolute bottom-0 left-0 right-0 border-t border-secondary/40 p-3">
         <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-full bg-slate-200" />
+          <div className="h-8 w-8 rounded-full bg-secondary/40" />
           <div className="flex-1">
-            <div className="text-sm font-medium">John Doe</div>
+            <div className="text-sm font-medium text-primary">John Doe</div>
             <div className="text-xs text-slate-500">Free plan</div>
           </div>
-          <button className="rounded-md border px-2 py-1 text-xs hover:bg-slate-50">Logout</button>
+          <NavLink to="/settings" className="rounded-md border border-secondary/40 px-2 py-1 text-xs text-primary hover:bg-secondary/20">Profile</NavLink>
         </div>
       </div>
     </aside>
