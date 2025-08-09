@@ -1,9 +1,12 @@
 import React from 'react'
+import DashboardLayout from './layouts/DashboardLayout.jsx'
 
-function  App() {
+function App() {
   return (
-    <div className='h-screen w-screen bg-slate-200 flex items-center justify-center'c>App</div>
+    <DashboardLayout>
+      <div className="p-6">Dashboard content goes here.</div>
+    </DashboardLayout>
   )
 }
 
-export default  App
+export default App
