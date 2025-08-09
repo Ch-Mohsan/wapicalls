@@ -1,1 +1,20 @@
 @import "tailwindcss";
+
+@theme {
+  --color-primary: #1C352D; /* deep green */
+  --color-secondary: #A6B28B; /* sage */
+  --color-accent: #F5C9B0; /* peach */
+  --color-background: #F9F6F3; /* eggshell */
+}
+
+:root {
+  color-scheme: light;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  background: var(--color-background);
+}
