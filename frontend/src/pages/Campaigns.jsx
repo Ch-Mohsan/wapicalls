@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useMemo, useState } from 'react'
 import Card from '../components/Card.jsx'
 import Badge from '../components/Badge.jsx'
 import ProgressBar from '../components/ProgressBar.jsx'
@@ -11,6 +11,16 @@ const CAMPAIGNS = [
 ]
 
 function Campaigns() {
+  const [query, setQuery] = useState('')
+  const [status, setStatus] = useState('')
+
+  const filtered = useMemo(() => {
+    return CAMPAIGNS.filter((c) =>
+      (!query || c.name.toLowerCase().includes(query.toLowerCase()) || c.id.toLowerCase().includes(query.toLowerCase())) &&
+      (!status || c.status === status)
+    )
+  }, [query, status])
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
@@ -19,13 +29,31 @@ function Campaigns() {
           <p className="text-sm text-slate-600">Create and track campaigns</p>
         </div>
         <div className="flex items-center gap-2">
-          <button className="rounded-md border border-accent/40 bg-white px-3 py-2 text-sm text-primary hover:bg-accent/20">Import</button>
-          <button className="rounded-md bg-secondary px-3 py-2 text-sm text-white hover:opacity-90">New Campaign</button>
+          <a href="/campaigns/new" className="rounded-md bg-secondary px-3 py-2 text-sm text-white hover:opacity-90">New Campaign</a>
         </div>
       </div>
 
+      <Card>
+        <div className="grid gap-3 md:grid-cols-3">
+          <div className="md:col-span-2">
+            <label className="mb-1 block text-xs text-slate-600">Search</label>
+            <input value={query} onChange={(e)=>setQuery(e.target.value)} placeholder="Search by name or ID" className="w-full rounded-md border border-accent/40 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent/40" />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs text-slate-600">Status</label>
+            <select value={status} onChange={(e)=>setStatus(e.target.value)} className="w-full rounded-md border border-accent/40 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent/40">
+              <option value="">All</option>
+              <option>Running</option>
+              <option>Scheduled</option>
+              <option>Paused</option>
+              <option>Completed</option>
+            </select>
+          </div>
+        </div>
+      </Card>
+
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {CAMPAIGNS.map((c) => (
+        {filtered.map((c) => (
           <Card key={c.id}>
             <div className="flex items-start justify-between gap-3">
               <div>
