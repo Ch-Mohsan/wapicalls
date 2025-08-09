@@ -36,8 +36,8 @@ function MobileSidebar({ open, onClose }) {
   return (
     <div className={["fixed inset-0 z-50 md:hidden", open ? "" : "pointer-events-none"].join(' ')}>
       <div className={["absolute inset-0 bg-black/30 transition-opacity", open ? "opacity-100" : "opacity-0"].join(' ')} onClick={onClose} />
-      <div className={["absolute inset-y-0 left-0 w-64 bg-white border-r border-secondary/40 shadow-xl transition-transform", open ? "translate-x-0" : "-translate-x-full"].join(' ')}>
-        <div className="flex h-14 items-center gap-2 border-b border-secondary/40 px-4">
+      <div className={["absolute inset-y-0 left-0 w-64 bg-white border-r border-accent/40 shadow-xl transition-transform", open ? "translate-x-0" : "-translate-x-full"].join(' ')}>
+        <div className="flex h-14 items-center gap-2 border-b border-accent/40 px-4">
           <div className="h-7 w-7 rounded-md bg-gradient-to-br from-primary to-accent" />
           <span className="text-sm font-semibold tracking-tight text-primary">SellSynth</span>
         </div>
@@ -45,9 +45,9 @@ function MobileSidebar({ open, onClose }) {
           {navItems.map((item) => (
             <NavLink key={item.label} to={item.to} onClick={onClose} className={({ isActive }) => [
               'group inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors',
-              isActive ? 'bg-secondary/30 text-primary' : 'text-slate-700 hover:bg-secondary/20 hover:text-primary'
+              isActive ? 'bg-accent/30 text-primary' : 'text-slate-700 hover:bg-accent/20 hover:text-primary'
             ].join(' ')}>
-              <Icon name={item.icon} className="h-4 w-4 text-slate-500 group-[.bg-secondary\/30]:text-primary group-hover:text-primary" />
+              <Icon name={item.icon} className="h-4 w-4 text-slate-500 group-[.bg-accent\/30]:text-primary group-hover:text-primary" />
               <span>{item.label}</span>
             </NavLink>
           ))}
