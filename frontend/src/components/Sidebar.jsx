@@ -1,8 +1,9 @@
 import React from 'react'
 import { NavLink } from 'react-router-dom'
+import { useAuth } from '../store/AuthContext.jsx'
 
 const navItems = [
-  { label: 'Dashboard', icon: 'home', to: '/' },
+  { label: 'Dashboard', icon: 'home', to: '/dashboard' },
   { label: 'Leads', icon: 'users', to: '/leads' },
   { label: 'Campaigns', icon: 'target', to: '/campaigns' },
   { label: 'Scripts', icon: 'file-text', to: '/scripts' },
@@ -47,6 +48,16 @@ function Icon({ name, className }) {
 }
 
 function Sidebar() {
+  const { user, logout } = useAuth()
+
+  const handleLogout = async () => {
+    try {
+      await logout()
+    } catch (error) {
+      console.error('Logout error:', error)
+    }
+  }
+
   return (
     <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 border-r border-accent/40 bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/60 md:block">
       <div className="flex h-14 items-center gap-2 border-b border-accent/40 px-4">
@@ -70,12 +81,21 @@ function Sidebar() {
       </nav>
       <div className="absolute bottom-0 left-0 right-0 border-t border-accent/40 p-3">
         <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-full bg-accent/40" />
+          <div className="h-8 w-8 rounded-full bg-accent/40 flex items-center justify-center">
+            <span className="text-xs font-medium text-primary">
+              {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+            </span>
+          </div>
           <div className="flex-1">
-            <div className="text-sm font-medium text-primary">John Doe</div>
+            <div className="text-sm font-medium text-primary">{user?.name || 'User'}</div>
             <div className="text-xs text-slate-500">Free plan</div>
           </div>
-          <NavLink to="/settings" className="rounded-md border border-accent/40 px-2 py-1 text-xs text-primary hover:bg-accent/20">Profile</NavLink>
+          <button
+            onClick={handleLogout}
+            className="rounded-md border border-accent/40 px-2 py-1 text-xs text-primary hover:bg-accent/20"
+          >
+            Logout
+          </button>
         </div>
       </div>
     </aside>

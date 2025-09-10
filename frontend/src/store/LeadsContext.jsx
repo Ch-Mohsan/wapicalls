@@ -1,16 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { ApiClient } from './apiClient.js'
 
 const LeadsContext = createContext(null)
-
-const DUMMY = Array.from({ length: 24 }).map((_, i) => ({
-  id: `DL${100 + i}`,
-  name: ['Ava Smith', 'Liam Johnson', 'Olivia Brown', 'Noah Davis'][i % 4],
-  email: `dummy${i}@example.com`,
-  phone: `+1 (555) 100-${String(1000 + i).slice(1)}`,
-  status: ['New', 'Contacted', 'Qualified', 'Lost'][i % 4],
-  score: [72, 35, 88, 55][i % 4],
-  createdAt: `2025-07-${(i % 28) + 1}`,
-}))
 
 export function LeadsProvider({ children }) {
   const [leads, setLeads] = useState([])
@@ -21,26 +12,131 @@ export function LeadsProvider({ children }) {
     setLoading(true)
     setError(null)
     try {
-      await new Promise((r) => setTimeout(r, 200))
-      setLeads(DUMMY)
+      const response = await ApiClient.get('/api/contacts')
+      const data = Array.isArray(response) ? response : (response?.data || [])
+      
+      // Transform contacts to leads format
+      const transformedLeads = data.map(contact => ({
+        id: contact._id || contact.id,
+        name: contact.name || '',
+        email: contact.email || '',
+        phone: contact.phoneNumber || contact.phone || '', // Backend uses phoneNumber
+        status: contact.status || 'New',
+        score: contact.score || 0,
+        createdAt: contact.createdAt ? new Date(contact.createdAt).toLocaleDateString() : new Date().toLocaleDateString(),
+        company: contact.company || '',
+        notes: contact.notes || ''
+      }))
+      setLeads(transformedLeads)
     } catch (err) {
-      setError(err)
-      setLeads(DUMMY)
+      console.error('Error loading leads:', err)
+      setError(err?.message || 'Failed to load leads')
+      setLeads([]) // Clear leads on error
     } finally {
       setLoading(false)
     }
   }, [])
 
   const createLead = useCallback(async (payload) => {
-    await new Promise((r) => setTimeout(r, 200))
-    const newLead = { id: `DL${Math.random().toString(36).slice(2, 8)}`, createdAt: new Date().toISOString().slice(0,10), status: 'New', score: 0, ...payload }
-    setLeads((prev) => [newLead, ...prev])
-    return newLead
+    setLoading(true)
+    setError(null)
+    try {
+      const data = await ApiClient.post('/api/contacts', payload)
+      const newLead = {
+        id: data._id,
+        name: data.name,
+        email: data.email,
+        phone: data.phoneNumber || data.phone, // Backend uses phoneNumber
+        status: data.status || 'New',
+        score: data.score || 0,
+        createdAt: new Date(data.createdAt).toLocaleDateString(),
+        company: data.company,
+        notes: data.notes
+      }
+      setLeads(prev => [newLead, ...prev])
+      return newLead
+    } catch (err) {
+      console.error('Error creating lead:', err)
+      setError(err?.message || 'Failed to create lead')
+      throw err
+    } finally {
+      setLoading(false)
+    }
   }, [])
 
-  const value = useMemo(() => ({ leads, setLeads, loading, error, loadLeads, createLead }), [leads, loading, error, loadLeads, createLead])
+  const updateLead = useCallback(async (id, payload) => {
+    setLoading(true)
+    setError(null)
+    try {
+      const data = await ApiClient.put(`/api/contacts/${id}`, payload)
+      const updatedLead = {
+        id: data._id,
+        name: data.name,
+        email: data.email,
+        phone: data.phoneNumber || data.phone, // Backend uses phoneNumber
+        status: data.status || 'New',
+        score: data.score || 0,
+        createdAt: new Date(data.createdAt).toLocaleDateString(),
+        company: data.company,
+        notes: data.notes
+      }
+      setLeads(prev => prev.map(lead => lead.id === id ? updatedLead : lead))
+      return updatedLead
+    } catch (err) {
+      console.error('Error updating lead:', err)
+      setError(err?.message || 'Failed to update lead')
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
-  useEffect(() => { loadLeads() }, [loadLeads])
+  const deleteLead = useCallback(async (id) => {
+    setLoading(true)
+    setError(null)
+    try {
+      await ApiClient.delete(`/api/contacts/${id}`)
+      setLeads(prev => prev.filter(lead => lead.id !== id))
+    } catch (err) {
+      console.error('Error deleting lead:', err)
+      setError(err?.message || 'Failed to delete lead')
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  const bulkImportLeads = useCallback(async (csvData) => {
+    setLoading(true)
+    setError(null)
+    try {
+      const data = await ApiClient.post('/api/contacts/bulk-import', { contacts: csvData })
+      await loadLeads() // Refresh the leads list
+      return data
+    } catch (err) {
+      console.error('Error importing leads:', err)
+      setError(err?.message || 'Failed to import leads')
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }, [loadLeads])
+
+  const value = useMemo(() => ({ 
+    leads, 
+    setLeads, 
+    loading, 
+    error, 
+    loadLeads, 
+    createLead, 
+    updateLead, 
+    deleteLead, 
+    bulkImportLeads 
+  }), [leads, loading, error, loadLeads, createLead, updateLead, deleteLead, bulkImportLeads])
+
+  useEffect(() => { 
+    loadLeads() 
+  }, [loadLeads])
 
   return (
     <LeadsContext.Provider value={value}>{children}</LeadsContext.Provider>
