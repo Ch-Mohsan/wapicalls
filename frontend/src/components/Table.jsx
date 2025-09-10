@@ -43,7 +43,7 @@ export function Table({ columns, rows, getRowId, selectedIds = new Set(), onTogg
                   {columns.map((col) => (
                     <td key={col.key} className="px-3 py-3 text-sm text-primary">
                       <div className="max-w-xs truncate">
-                        {col.render ? col.render(row[col.key], row) : row[col.key]}
+                        {col.render ? col.render(row) : row[col.key]}
                       </div>
                     </td>
                   ))}
@@ -106,7 +106,7 @@ export function Table({ columns, rows, getRowId, selectedIds = new Set(), onTogg
                       {col.header}:
                     </span>
                     <span className="text-sm text-primary mt-1 sm:mt-0 break-words">
-                      {col.render ? col.render(row[col.key], row) : row[col.key]}
+                      {col.render ? col.render(row) : row[col.key]}
                     </span>
                   </div>
                 ))}

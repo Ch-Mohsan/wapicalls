@@ -193,10 +193,19 @@ export const getCalls = async (req, res) => {
 // @access  Private
 export const getCall = async (req, res) => {
   try {
-    const call = await Call.findOne({
-      _id: req.params.id,
+    // Support lookup by both MongoDB _id and vapiCallId
+    const query = {
       createdBy: req.user.id
-    })
+    };
+    
+    // Try to match by MongoDB ObjectId format first, otherwise treat as vapiCallId
+    if (req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
+      query._id = req.params.id;
+    } else {
+      query.vapiCallId = req.params.id;
+    }
+
+    const call = await Call.findOne(query)
       .populate("contact", "name email company phoneNumber")
       .populate("createdBy", "name email");
 
@@ -345,24 +354,61 @@ export const createCall = async (req, res) => {
       .populate("contact", "name email company phoneNumber")
       .populate("createdBy", "name email");
 
-    // Start status monitoring for real VAPI calls
+    // Start comprehensive status monitoring for real VAPI calls
     if (USE_VAPI) {
-      // Check status after 5 seconds
-      setTimeout(async () => {
+      let attempts = 0;
+      const maxAttempts = 20; // Poll for up to 10 minutes (every 30 seconds)
+      
+      const pollCallStatus = async () => {
         try {
-          const statusData = await vapiGetCall(vapiCallData.id);
-          console.log(`📞 Call ${vapiCallData.id} status after 5s:`, statusData.status);
+          attempts++;
+          const callDetails = await vapiGetCall(vapiCallData.id);
+          console.log(`📞 Call ${vapiCallData.id} status check ${attempts}:`, {
+            status: callDetails.status,
+            transcript: callDetails.transcript ? 'Present' : 'None',
+            duration: callDetails.duration || 'Unknown'
+          });
           
-          if (statusData?.status) {
+          // Update call with latest details
+          const updateData = {};
+          if (callDetails.status) updateData.status = callDetails.status;
+          if (callDetails.transcript) updateData.transcript = callDetails.transcript;
+          if (callDetails.duration) updateData.duration = callDetails.duration;
+          
+          if (Object.keys(updateData).length > 0) {
             await Call.findOneAndUpdate(
               { vapiCallId: vapiCallData.id },
-              { status: statusData.status }
+              updateData
             );
+            console.log(`💾 Updated call ${vapiCallData.id}:`, updateData);
           }
+          
+          // Check if call is finished or if we should continue polling
+          const isFinished = ['completed', 'ended', 'failed', 'no-answer', 'busy', 'canceled'].includes(
+            callDetails.status?.toLowerCase() || ''
+          );
+          
+          if (!isFinished && attempts < maxAttempts) {
+            // Continue polling every 30 seconds
+            setTimeout(pollCallStatus, 30000);
+          } else if (isFinished) {
+            console.log(`✅ Call ${vapiCallData.id} finished with status: ${callDetails.status}`);
+          } else {
+            console.log(`⏰ Stopped polling call ${vapiCallData.id} after ${maxAttempts} attempts`);
+          }
+          
         } catch (err) {
-          console.error("Failed to check call status:", err.message);
+          console.error(`❌ Failed to check call status (attempt ${attempts}):`, err.message);
+          
+          // Continue polling unless we've reached max attempts
+          if (attempts < maxAttempts) {
+            setTimeout(pollCallStatus, 30000);
+          }
         }
-      }, 5000);
+      };
+      
+      // Start first check after 10 seconds
+      setTimeout(pollCallStatus, 10000);
     }
 
     res.status(201).json({
@@ -508,6 +554,88 @@ export const handleVapiWebhook = async (req, res) => {
   } catch (err) {
     console.error("❌ Webhook error:", err);
     res.sendStatus(200);
+  }
+};
+
+// @desc    Refresh call details from VAPI
+// @route   POST /api/calls/:id/refresh
+// @access  Private
+export const refreshCallFromVapi = async (req, res) => {
+  try {
+    const query = {
+      createdBy: req.user.id
+    };
+    
+    // Try to match by MongoDB ObjectId format first, otherwise treat as vapiCallId
+    if (req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
+      query._id = req.params.id;
+    } else {
+      query.vapiCallId = req.params.id;
+    }
+
+    const call = await Call.findOne(query);
+
+    if (!call) {
+      return res.status(404).json({
+        success: false,
+        message: "Call not found"
+      });
+    }
+
+    if (!call.vapiCallId) {
+      return res.status(400).json({
+        success: false,
+        message: "No VAPI call ID associated with this call"
+      });
+    }
+
+    if (!USE_VAPI) {
+      return res.status(400).json({
+        success: false,
+        message: "VAPI is not configured"
+      });
+    }
+
+    try {
+      // Fetch latest details from VAPI
+      const callDetails = await vapiGetCall(call.vapiCallId);
+      
+      // Update call with latest details
+      const updateData = {};
+      if (callDetails.status) updateData.status = callDetails.status;
+      if (callDetails.transcript) updateData.transcript = callDetails.transcript;
+      if (callDetails.duration) updateData.duration = callDetails.duration;
+      
+      if (Object.keys(updateData).length > 0) {
+        await Call.findByIdAndUpdate(call._id, updateData);
+      }
+
+      // Return updated call
+      const updatedCall = await Call.findById(call._id)
+        .populate("contact", "name email company phoneNumber")
+        .populate("createdBy", "name email");
+
+      res.status(200).json({
+        success: true,
+        message: "Call details refreshed from VAPI",
+        data: updatedCall
+      });
+
+    } catch (vapiError) {
+      console.error("Error fetching from VAPI:", vapiError.message);
+      res.status(500).json({
+        success: false,
+        message: "Failed to fetch call details from VAPI",
+        error: vapiError.message
+      });
+    }
+
+  } catch (error) {
+    console.error("Refresh call error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error refreshing call"
+    });
   }
 };
 

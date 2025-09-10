@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard.jsx'
 import Leads from './pages/Leads.jsx'
 import Campaigns from './pages/Campaigns.jsx'
 import CampaignNew from './pages/CampaignNew.jsx'
+import CallHistory from './pages/CallHistory.jsx'
 import Scripts from './pages/Scripts.jsx'
 import Analytics from './pages/Analytics.jsx'
 import Schedule from './pages/Schedule.jsx'
@@ -45,6 +46,7 @@ function App() {
           <Route path="/leads" element={<Leads />} />
           <Route path="/campaigns" element={<Campaigns />} />
           <Route path="/campaigns/new" element={<CampaignNew />} />
+          <Route path="/calls" element={<CallHistory />} />
           <Route path="/scripts" element={<Scripts />} />
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/schedule" element={<Schedule />} />

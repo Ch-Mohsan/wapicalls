@@ -52,37 +52,53 @@ function Leads() {
         name: lead.name || 'Unknown'
       })
 
-      if (response.vapiCallId) {
+      if (response.success && response.data.call) {
+        const call = response.data.call
         setCallStates(prev => ({ ...prev, [leadId]: 'in-process' }))
         showSuccess(`Call connected to ${lead.name || lead.phone}`)
         
-        // Poll for call status updates
-        pollCallStatus(response.vapiCallId, leadId)
+        // Poll for call status updates using both database ID and VAPI ID
+        pollCallStatus(call._id, call.vapiCallId, leadId)
       }
     } catch (error) {
       console.error('Error making call:', error)
       setCallStates(prev => ({ ...prev, [leadId]: 'failed' }))
-      showError(`Failed to initiate call: ${error.response?.data?.error || error.message}`)
+      showError(`Failed to initiate call: ${error.response?.data?.message || error.message}`)
     }
   }
 
   // Poll call status from backend
-  const pollCallStatus = async (vapiCallId, leadId) => {
+  const pollCallStatus = async (callId, vapiCallId, leadId) => {
     let attempts = 0
     const maxAttempts = 60 // Poll for 5 minutes (every 5 seconds)
     
     const poll = async () => {
       try {
-        const response = await ApiClient.get(`/api/calls/${vapiCallId}`)
+        // Use the database call ID for more reliable lookups
+        const response = await ApiClient.get(`/api/calls/${callId}`)
         const call = response
         
-        if (call.status && ['completed', 'ended', 'failed', 'no-answer', 'busy'].includes(call.status.toLowerCase())) {
-          setCallStates(prev => ({ ...prev, [leadId]: 'ended' }))
-          showSuccess(`Call ended. Status: ${call.status}`)
-          if (call.transcript) {
-            console.log('Call transcript:', call.transcript)
+        if (call.success && call.data) {
+          const callData = call.data
+          
+          // Check if call has ended
+          if (callData.status && ['completed', 'ended', 'failed', 'no-answer', 'busy', 'canceled'].includes(callData.status.toLowerCase())) {
+            setCallStates(prev => ({ ...prev, [leadId]: 'ended' }))
+            
+            if (callData.transcript) {
+              showSuccess(`Call completed! Transcript available in Call History.`)
+            } else {
+              showSuccess(`Call ended with status: ${callData.status}`)
+            }
+            return
           }
-          return
+          
+          // Update call state if still in progress
+          if (callData.status === 'ringing') {
+            setCallStates(prev => ({ ...prev, [leadId]: 'ringing' }))
+          } else if (callData.status === 'in-progress') {
+            setCallStates(prev => ({ ...prev, [leadId]: 'in-process' }))
+          }
         }
         
         attempts++
@@ -90,15 +106,21 @@ function Leads() {
           setTimeout(poll, 5000) // Poll every 5 seconds
         } else {
           setCallStates(prev => ({ ...prev, [leadId]: 'ended' }))
-          showWarning('Call status polling timed out')
+          showWarning('Call status polling timed out. Check Call History for final status.')
         }
       } catch (error) {
         console.error('Error polling call status:', error)
-        setCallStates(prev => ({ ...prev, [leadId]: 'ended' }))
+        attempts++
+        if (attempts < maxAttempts) {
+          setTimeout(poll, 10000) // Retry after 10 seconds on error
+        } else {
+          setCallStates(prev => ({ ...prev, [leadId]: 'ended' }))
+        }
       }
     }
     
-    setTimeout(poll, 5000) // Start polling after 5 seconds
+    // Start polling after a brief delay
+    setTimeout(poll, 2000)
   }
 
   const getCallStatusBadge = (leadId) => {
@@ -119,7 +141,8 @@ function Leads() {
     { key: 'name', header: 'Name' },
     { key: 'email', header: 'Email' },
     { key: 'phone', header: 'Phone' },
-    { key: 'status', header: 'Status', render: (value) => {
+    { key: 'status', header: 'Status', render: (row) => {
+      const value = row.status
       const variant = value === 'Qualified' ? 'success' : value === 'Contacted' ? 'info' : value === 'Lost' ? 'danger' : 'default'
       return <Badge variant={variant}>{value}</Badge>
     } },
