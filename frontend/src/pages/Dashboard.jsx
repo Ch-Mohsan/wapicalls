@@ -3,6 +3,7 @@ import StatCard from '../components/StatCard.jsx'
 import ProgressBar from '../components/ProgressBar.jsx'
 import Card from '../components/Card.jsx'
 import { Link } from 'react-router-dom'
+import { useDashboardStats } from '../store/useDashboardStats.js'
 
 function Icon({ name, className = 'h-5 w-5 text-primary' }) {
   switch (name) {
@@ -24,6 +25,57 @@ function Icon({ name, className = 'h-5 w-5 text-primary' }) {
 }
 
 function Dashboard() {
+  const { stats, loading, error } = useDashboardStats()
+
+  // Format time ago helper
+  const timeAgo = (date) => {
+    const now = new Date()
+    const then = new Date(date)
+    const diff = now - then
+    const seconds = Math.floor(diff / 1000)
+    const minutes = Math.floor(seconds / 60)
+    const hours = Math.floor(minutes / 60)
+    const days = Math.floor(hours / 24)
+    
+    if (days > 0) return `${days} day${days > 1 ? 's' : ''} ago`
+    if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} ago`
+    if (minutes > 0) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`
+    return 'Just now'
+  }
+
+  if (loading) {
+    return (
+      <div className="space-y-8 animate-in fade-in-50 duration-500">
+        <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+          <div className="space-y-1">
+            <h1 className="text-3xl font-bold tracking-tight text-primary">Dashboard</h1>
+            <p className="text-sm text-slate-600">Loading dashboard data...</p>
+          </div>
+        </div>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="rounded-lg border border-gray-200 p-6 animate-pulse">
+              <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+              <div className="h-6 bg-gray-200 rounded w-1/2"></div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-8 animate-in fade-in-50 duration-500">
+        <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+          <div className="space-y-1">
+            <h1 className="text-3xl font-bold tracking-tight text-primary">Dashboard</h1>
+            <p className="text-sm text-red-600">Error loading dashboard: {error}</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
   return (
     <div className="space-y-8 animate-in fade-in-50 duration-500">
       {/* Header */}
@@ -40,10 +92,30 @@ function Dashboard() {
 
       {/* Stat Cards */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard title="Total Calls" value="573" trend="+12%" icon={<Icon name="phone" />} />
-        <StatCard title="Active Leads" value="1,234" trend="+20.1%" icon={<Icon name="users" />} />
-        <StatCard title="Success Rate" value="38.5%" trend="+1.5%" icon={<Icon name="trend" />} />
-        <StatCard title="Active Campaigns" value="5" trend="+3" icon={<Icon name="check" />} />
+        <StatCard 
+          title="Total Calls" 
+          value={stats.totalCalls.toString()} 
+          trend={stats.totalCalls > 0 ? "+12%" : "0%"} 
+          icon={<Icon name="phone" />} 
+        />
+        <StatCard 
+          title="Active Leads" 
+          value={stats.activeLeads.toString()} 
+          trend={stats.activeLeads > 0 ? "+20.1%" : "0%"} 
+          icon={<Icon name="users" />} 
+        />
+        <StatCard 
+          title="Success Rate" 
+          value={`${stats.successRate}%`} 
+          trend={stats.successRate > 0 ? "+1.5%" : "0%"} 
+          icon={<Icon name="trend" />} 
+        />
+        <StatCard 
+          title="Active Campaigns" 
+          value={stats.activeCampaigns.toString()} 
+          trend={stats.activeCampaigns > 0 ? "+3" : "0"} 
+          icon={<Icon name="check" />} 
+        />
       </div>
 
       {/* Analytics + Quick Cards */}
@@ -57,15 +129,29 @@ function Dashboard() {
           </div>
           <div className="mt-4 grid grid-cols-3 gap-4 border-t pt-4">
             <div className="text-center">
-              <div className="text-2xl font-bold text-primary">47</div>
+              <div className="text-2xl font-bold text-primary">
+                {stats.recentCalls.filter(call => {
+                  const today = new Date()
+                  const callDate = new Date(call.createdAt)
+                  return callDate.toDateString() === today.toDateString()
+                }).length}
+              </div>
               <div className="text-sm text-slate-600">Calls Today</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-green-700">18</div>
+              <div className="text-2xl font-bold text-green-700">
+                {stats.recentCalls.filter(call => 
+                  call.status === 'completed' || call.status === 'successful'
+                ).length}
+              </div>
               <div className="text-sm text-slate-600">Successful</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-secondary-700">12</div>
+              <div className="text-2xl font-bold text-secondary-700">
+                {stats.recentCalls.filter(call => 
+                  call.status === 'no-answer' || call.status === 'busy'
+                ).length}
+              </div>
               <div className="text-sm text-slate-600">Callbacks</div>
             </div>
           </div>
@@ -73,16 +159,25 @@ function Dashboard() {
 
         <Card title={<div className="flex items-center gap-2"><Icon name="calendar" /><span>Recent Activity</span></div>} subtitle="Latest updates from your campaigns">
           <div className="space-y-3">
-            {[{ t: 'Campaign "Q4 Follow-up" launched successfully', tag: 'success' }, { t: '50 new leads imported to database', tag: 'info' }, { t: "Campaign 'Welcome Calls' completed", tag: 'success' }].map((item, i) => (
+            {stats.recentActivity.length > 0 ? stats.recentActivity.map((item, i) => (
               <div key={i} className="group flex items-start gap-3 rounded-md p-3 hover:bg-secondary/20">
                 <div className="h-8 w-8 shrink-0 rounded-xl bg-secondary/30" />
                 <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-medium text-primary group-hover:opacity-90">{item.t}</div>
-                  <div className="text-xs text-slate-600">{i === 0 ? '2 hours ago' : i === 1 ? '1 day ago' : '3 days ago'}</div>
+                  <div className="truncate text-sm font-medium text-primary group-hover:opacity-90">{item.message}</div>
+                  <div className="text-xs text-slate-600">{timeAgo(item.time)}</div>
                 </div>
-                <span className={["inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold", item.tag === 'success' ? 'bg-primary text-white' : 'bg-secondary/40 text-primary'].join(' ')}>{item.tag}</span>
+                <span className={[
+                  "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold", 
+                  item.tag === 'success' ? 'bg-primary text-white' : 'bg-secondary/40 text-primary'
+                ].join(' ')}>
+                  {item.tag}
+                </span>
               </div>
-            ))}
+            )) : (
+              <div className="text-center py-4 text-sm text-slate-600">
+                No recent activity. <Link to="/leads" className="text-secondary hover:underline">Add some leads</Link> to get started!
+              </div>
+            )}
           </div>
         </Card>
       </div>

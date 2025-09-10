@@ -5,15 +5,21 @@ import App from './App.jsx'
 import { AuthProvider } from './store/AuthContext.jsx'
 import { LeadsProvider } from './store/LeadsContext.jsx'
 import { UIProvider } from './store/UIContext.jsx'
+import { ToastProvider } from './store/ToastContext.jsx'
+import { CampaignsProvider } from './store/CampaignsContext.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <UIProvider>
-      <AuthProvider>
-        <LeadsProvider>
-          <App />
-        </LeadsProvider>
-      </AuthProvider>
-    </UIProvider>
+    <ToastProvider>
+      <UIProvider>
+        <AuthProvider>
+          <LeadsProvider>
+            <CampaignsProvider>
+              <App />
+            </CampaignsProvider>
+          </LeadsProvider>
+        </AuthProvider>
+      </UIProvider>
+    </ToastProvider>
   </StrictMode>,
 )

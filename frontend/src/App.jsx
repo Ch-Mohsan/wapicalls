@@ -1,5 +1,5 @@
 import React from 'react'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import DashboardLayout from './layouts/DashboardLayout.jsx'
 import ProtectedLayout from './layouts/ProtectedLayout.jsx'
 import PublicLayout from './layouts/PublicLayout.jsx'
@@ -14,13 +14,28 @@ import Settings from './pages/Settings.jsx'
 import Landing from './pages/Landing.jsx'
 import Login from './pages/Login.jsx'
 import Signup from './pages/Signup.jsx'
+import { useAuth } from './store/AuthContext.jsx'
+
+function RootRedirect() {
+  const { isAuthenticated, loading } = useAuth()
+  
+  if (loading) {
+    return <div className="flex items-center justify-center min-h-screen">
+      <div className="text-sm text-slate-600">Loading...</div>
+    </div>
+  }
+  
+  return isAuthenticated ? <Navigate to="/dashboard" replace /> : <Navigate to="/landing" replace />
+}
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="/" element={<RootRedirect />} />
+        
         <Route element={<PublicLayout />}> 
-          <Route path="/" element={<Landing />} />
+          <Route path="/landing" element={<Landing />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
         </Route>
@@ -35,6 +50,9 @@ function App() {
           <Route path="/schedule" element={<Schedule />} />
           <Route path="/settings" element={<Settings />} />
         </Route>
+        
+        {/* Catch-all route - redirect to landing for unmatched routes */}
+        <Route path="*" element={<Navigate to="/landing" replace />} />
       </Routes>
     </BrowserRouter>
   )

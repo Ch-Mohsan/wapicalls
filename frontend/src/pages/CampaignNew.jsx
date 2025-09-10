@@ -1,9 +1,13 @@
 import React, { useState } from 'react'
 import Card from '../components/Card.jsx'
 import { useNavigate } from 'react-router-dom'
+import { useCampaigns } from '../store/CampaignsContext.jsx'
+import { useToast } from '../store/ToastContext.jsx'
 
 function CampaignNew() {
   const navigate = useNavigate()
+  const { createCampaign } = useCampaigns()
+  const { showSuccess, showError } = useToast()
   const [name, setName] = useState('')
   const [target, setTarget] = useState('Cold Leads')
   const [startAt, setStartAt] = useState('')
@@ -13,8 +17,24 @@ function CampaignNew() {
   const onSubmit = async (e) => {
     e.preventDefault()
     setSubmitting(true)
-    await new Promise((r)=>setTimeout(r,300))
-    navigate('/campaigns', { replace: true })
+    
+    try {
+      const campaignData = {
+        name,
+        target,
+        startAt: startAt || new Date().toISOString(),
+        script,
+        status: startAt && new Date(startAt) > new Date() ? 'Scheduled' : 'Running'
+      }
+      
+      await createCampaign(campaignData)
+      showSuccess('Campaign created successfully!')
+      navigate('/campaigns', { replace: true })
+    } catch (error) {
+      showError('Failed to create campaign. Please try again.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (

@@ -9,7 +9,7 @@ export function setAuthToken(token) {
 export async function apiFetch(path, { method = 'GET', headers = {}, body, signal, timeoutMs = DEFAULT_TIMEOUT_MS } = {}) {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(new Error('timeout')), timeoutMs)
-  const base = import.meta.env.VITE_API_BASE_URL || ''
+  const base = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'
   const url = `${base}${path}`
   const requestHeaders = {
     'Accept': 'application/json',
@@ -17,6 +17,7 @@ export async function apiFetch(path, { method = 'GET', headers = {}, body, signa
     ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {}),
     ...headers,
   }
+  
   try {
     const res = await fetch(url, {
       method,
@@ -25,15 +26,26 @@ export async function apiFetch(path, { method = 'GET', headers = {}, body, signa
       signal: signal || controller.signal,
       credentials: 'include',
     })
+    
     const isJson = (res.headers.get('content-type') || '').includes('application/json')
     const data = isJson ? await res.json() : await res.text()
+    
     if (!res.ok) {
-      const error = new Error(res.statusText)
+      const error = new Error(data?.message || res.statusText || 'Request failed')
       error.status = res.status
       error.data = data
       throw error
     }
+    
     return data
+  } catch (fetchError) {
+    // Handle network errors and timeouts
+    if (fetchError.name === 'AbortError' || fetchError.message === 'timeout') {
+      const error = new Error('Request timeout')
+      error.status = 408
+      throw error
+    }
+    throw fetchError
   } finally {
     clearTimeout(timeout)
   }
