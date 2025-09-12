@@ -5,6 +5,7 @@ import ProtectedLayout from './layouts/ProtectedLayout.jsx'
 import PublicLayout from './layouts/PublicLayout.jsx'
 import Dashboard from './pages/Dashboard.jsx'
 import Leads from './pages/Leads.jsx'
+import CallHistory from './pages/CallHistory.jsx'
 import Campaigns from './pages/Campaigns.jsx'
 import CampaignNew from './pages/CampaignNew.jsx'
 import Scripts from './pages/Scripts.jsx'
@@ -43,6 +44,7 @@ function App() {
         <Route element={<ProtectedLayout />}> 
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/leads" element={<Leads />} />
+          <Route path="/call-history" element={<CallHistory />} />
           <Route path="/campaigns" element={<Campaigns />} />
           <Route path="/campaigns/new" element={<CampaignNew />} />
           <Route path="/scripts" element={<Scripts />} />
