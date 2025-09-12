@@ -6,6 +6,7 @@ import {
   updateCall,
   deleteCall,
   handleVapiWebhook,
+  refreshCallFromVapi,
   testPhoneFormat
 } from "../controllers/callController.js";
 import { protect } from "../middleware/auth.js";
@@ -30,5 +31,8 @@ router.route("/:id")
   .get(getCall)
   .put(updateCall)
   .delete(deleteCall);
+
+// Refresh call data from VAPI
+router.post("/:id/refresh", refreshCallFromVapi);
 
 export default router;

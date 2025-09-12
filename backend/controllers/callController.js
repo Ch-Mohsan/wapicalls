@@ -160,7 +160,7 @@ export const getCalls = async (req, res) => {
         .sort(sort)
         .skip(skip)
         .limit(limitNum)
-        .populate("contact", "name email company")
+        .populate("contact", "name email company phoneNumber")
         .populate("createdBy", "name email"),
       Call.countDocuments(query)
     ]);
@@ -508,6 +508,121 @@ export const handleVapiWebhook = async (req, res) => {
   } catch (err) {
     console.error("❌ Webhook error:", err);
     res.sendStatus(200);
+  }
+};
+
+// @desc    Refresh call data from VAPI
+// @route   POST /api/calls/:id/refresh
+// @access  Private
+export const refreshCallFromVapi = async (req, res) => {
+  try {
+    const call = await Call.findOne({
+      _id: req.params.id,
+      createdBy: req.user.id
+    });
+
+    if (!call) {
+      return res.status(404).json({
+        success: false,
+        message: "Call not found"
+      });
+    }
+
+    if (!call.vapiCallId) {
+      return res.status(400).json({
+        success: false,
+        message: "Call does not have a VAPI call ID"
+      });
+    }
+
+    try {
+      // Get latest data from VAPI
+      const vapiData = await vapiGetCall(call.vapiCallId);
+      console.log("🔄 VAPI call data:", JSON.stringify(vapiData, null, 2));
+
+      // Extract meaningful data
+      const updates = {};
+      
+      if (vapiData.status) {
+        updates.status = vapiData.status;
+      }
+      
+      if (vapiData.duration || vapiData.durationSeconds) {
+        updates.duration = vapiData.duration || vapiData.durationSeconds;
+      }
+      
+      if (vapiData.cost || vapiData.costBreakdown?.total) {
+        updates.cost = vapiData.cost || vapiData.costBreakdown?.total || 0;
+      }
+      
+      if (vapiData.endReason) {
+        updates.endReason = vapiData.endReason;
+      }
+      
+      if (vapiData.startedAt) {
+        updates.startedAt = new Date(vapiData.startedAt);
+      }
+      
+      if (vapiData.endedAt) {
+        updates.endedAt = new Date(vapiData.endedAt);
+      }
+      
+      if (vapiData.recordingUrl) {
+        updates.recordingUrl = vapiData.recordingUrl;
+      }
+
+      // Handle transcript
+      if (vapiData.transcript) {
+        updates.transcript = vapiData.transcript;
+      } else if (vapiData.messages && Array.isArray(vapiData.messages)) {
+        // Build transcript from messages
+        const transcript = vapiData.messages
+          .map(msg => {
+            const role = msg.role || 'unknown';
+            const content = msg.content || msg.text || '';
+            return `${role}: ${content}`;
+          })
+          .join('\n');
+        if (transcript) {
+          updates.transcript = transcript;
+        }
+      }
+      
+      // Store the full VAPI response for debugging
+      updates.vapiResponse = vapiData;
+
+      console.log("📝 Updating call with:", updates);
+
+      // Update the call
+      const updatedCall = await Call.findByIdAndUpdate(
+        call._id,
+        updates,
+        { new: true }
+      ).populate("contact", "name email company phoneNumber")
+       .populate("createdBy", "name email");
+
+      res.status(200).json({
+        success: true,
+        message: "Call refreshed from VAPI successfully",
+        data: updatedCall,
+        vapiData: vapiData
+      });
+
+    } catch (vapiError) {
+      console.error("Error fetching from VAPI:", vapiError);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to fetch call data from VAPI",
+        error: vapiError.message
+      });
+    }
+
+  } catch (error) {
+    console.error("Refresh call error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error refreshing call"
+    });
   }
 };
 
