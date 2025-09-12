@@ -55,14 +55,6 @@ function CallHistory() {
     setSelectedCalls([])
   }, [page, query, status])
 
-  // Format call duration
-  const formatDuration = (duration) => {
-    if (!duration) return 'N/A'
-    const minutes = Math.floor(duration / 60)
-    const seconds = duration % 60
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`
-  }
-
   // Get status badge variant
   const getStatusVariant = (status) => {
     switch (status?.toLowerCase()) {
@@ -171,20 +163,6 @@ function CallHistory() {
           {displayStatus}
         </Badge>
       )
-    }},
-    { key: 'duration', header: 'Duration', render: (value, call) => {
-      const duration = call?.duration || 0
-      if (duration === 0) {
-        // Check if call is completed or in progress
-        if (call?.status === 'in-progress' || call?.status === 'ringing') {
-          return <span className="text-sm text-slate-500">Ongoing</span>
-        } else if (call?.status === 'failed' || call?.status === 'no-answer' || call?.status === 'busy') {
-          return <span className="text-sm text-slate-500">No duration</span>
-        } else {
-          return <span className="text-sm text-slate-500">N/A</span>
-        }
-      }
-      return <span className="text-sm">{formatDuration(duration)}</span>
     }},
     { key: 'createdAt', header: 'Date', render: (value, call) => {
       // Try multiple date fields
