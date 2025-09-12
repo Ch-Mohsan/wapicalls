@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react'
+import { motion } from 'framer-motion'
 import Card from '../components/Card.jsx'
 import Badge from '../components/Badge.jsx'
 import Modal from '../components/Modal.jsx'
+import PageTransition from '../components/PageTransition.jsx'
 import { Table } from '../components/Table.jsx'
 import { ApiClient } from '../store/apiClient.js'
 import { useToast } from '../store/ToastContext.jsx'
@@ -262,43 +264,56 @@ function CallHistory() {
 
   const renderActions = (call) => (
     <div className="flex items-center justify-center">
-      <button 
+      <motion.button 
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
         onClick={() => handleViewCall(call)}
         className="rounded-md border border-accent/40 px-3 py-1.5 text-xs text-primary hover:bg-accent/20 transition-colors"
       >
         View Details
-      </button>
+      </motion.button>
     </div>
   )
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-semibold text-primary">Call History</h1>
-          <p className="text-sm text-slate-600">Track your call performance and responses</p>
-        </div>
-      </div>
-
-      {/* Filters */}
-      <Card>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <div className="sm:col-span-2 lg:col-span-2">
-            <label className="mb-2 block text-sm font-medium text-slate-700">Search</label>
-            <input 
-              value={query} 
-              onChange={(e) => setQuery(e.target.value)} 
-              placeholder="Search by name or phone number" 
-              className="w-full rounded-md border border-accent/40 bg-white px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-accent/40 transition-all" 
-            />
+    <PageTransition>
+      <div className="space-y-6">
+        <motion.div 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center"
+        >
+          <div className="space-y-1">
+            <h1 className="text-2xl font-semibold text-primary">Call History</h1>
+            <p className="text-sm text-slate-600">Track your call performance and responses</p>
           </div>
-          <div>
-            <label className="mb-2 block text-sm font-medium text-slate-700">Status Filter</label>
-            <select 
-              value={status} 
-              onChange={(e) => setStatus(e.target.value)} 
-              className="w-full rounded-md border border-accent/40 bg-white px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-accent/40 transition-all"
-            >
+        </motion.div>
+
+        {/* Filters */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+        >
+          <Card>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="sm:col-span-2 lg:col-span-2">
+                <label className="mb-2 block text-sm font-medium text-slate-700">Search</label>
+                <input 
+                  value={query} 
+                  onChange={(e) => setQuery(e.target.value)} 
+                  placeholder="Search by name or phone number" 
+                  className="w-full rounded-md border border-accent/40 bg-white px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-accent/40 transition-all" 
+                />
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-medium text-slate-700">Status Filter</label>
+                <select 
+                  value={status} 
+                  onChange={(e) => setStatus(e.target.value)} 
+                  className="w-full rounded-md border border-accent/40 bg-white px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-accent/40 transition-all"
+                >
               <option value="">All Status</option>
               <option value="completed">Completed</option>
               <option value="ended">Ended</option>
@@ -311,41 +326,91 @@ function CallHistory() {
           </div>
         </div>
       </Card>
+        </motion.div>
 
-      {/* Call Statistics */}
-      <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
-        <Card className="text-center">
-          <div className="text-xl md:text-2xl font-semibold text-primary">
-            {calls.filter(c => c.status === 'completed' || c.status === 'ended').length}
-          </div>
-          <div className="text-xs md:text-sm text-slate-600">Completed Calls</div>
-        </Card>
-        <Card className="text-center">
-          <div className="text-xl md:text-2xl font-semibold text-secondary">
-            {calls.filter(c => c.status === 'failed' || c.status === 'no-answer').length}
-          </div>
-          <div className="text-xs md:text-sm text-slate-600">Failed Calls</div>
-        </Card>
-        <Card className="text-center">
-          <div className="text-xl md:text-2xl font-semibold text-accent">
-            {calls.filter(c => c.status === 'in-progress' || c.status === 'ringing').length}
-          </div>
-          <div className="text-xs md:text-sm text-slate-600">Active Calls</div>
-        </Card>
-        <Card className="text-center">
-          <div className="text-xl md:text-2xl font-semibold text-primary">
-            {calls.length}
-          </div>
-          <div className="text-xs md:text-sm text-slate-600">Total Calls</div>
-        </Card>
-      </div>
+        {/* Call Statistics */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+          className="grid gap-4 grid-cols-2 md:grid-cols-4"
+        >
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.4 }}
+          >
+            <Card className="text-center">
+              <div className="text-xl md:text-2xl font-semibold text-primary">
+                {calls.filter(c => c.status === 'completed' || c.status === 'ended').length}
+              </div>
+              <div className="text-xs md:text-sm text-slate-600">Completed Calls</div>
+            </Card>
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.5 }}
+          >
+            <Card className="text-center">
+              <div className="text-xl md:text-2xl font-semibold text-secondary">
+                {calls.filter(c => c.status === 'failed' || c.status === 'no-answer').length}
+              </div>
+              <div className="text-xs md:text-sm text-slate-600">Failed Calls</div>
+            </Card>
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.6 }}
+          >
+            <Card className="text-center">
+              <div className="text-xl md:text-2xl font-semibold text-accent">
+                {calls.filter(c => c.status === 'in-progress' || c.status === 'ringing').length}
+              </div>
+              <div className="text-xs md:text-sm text-slate-600">Active Calls</div>
+            </Card>
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.7 }}
+          >
+            <Card className="text-center">
+              <div className="text-xl md:text-2xl font-semibold text-primary">
+                {calls.length}
+              </div>
+              <div className="text-xs md:text-sm text-slate-600">Total Calls</div>
+            </Card>
+          </motion.div>
+        </motion.div>
 
-      {/* Calls Table */}
-      <Card>
+        {/* Calls Table */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+        >
+          <Card>
         {loading ? (
-          <div className="text-center py-8">
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-center py-8"
+          >
+            <motion.div
+              animate={{ 
+                rotate: 360,
+                scale: [1, 1.1, 1]
+              }}
+              transition={{ 
+                rotate: { duration: 2, repeat: Infinity, ease: "linear" },
+                scale: { duration: 1, repeat: Infinity, ease: "easeInOut" }
+              }}
+              className="inline-block w-8 h-8 border-2 border-primary border-t-transparent rounded-full mb-4"
+            />
             <div className="text-slate-600">Loading call history...</div>
-          </div>
+          </motion.div>
         ) : calls.length === 0 ? (
           <div className="text-center py-8">
             <div className="text-slate-600">
@@ -363,19 +428,23 @@ function CallHistory() {
                   </span>
                 </div>
                 <div className="flex items-center gap-2 w-full sm:w-auto">
-                  <button
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
                     onClick={() => setSelectedCalls([])}
                     className="flex-1 sm:flex-none rounded-md border border-blue-300 bg-white px-3 py-1.5 text-sm text-blue-700 hover:bg-blue-50 transition-colors"
                   >
                     Clear Selection
-                  </button>
-                  <button
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
                     onClick={() => setShowDeleteModal(true)}
                     disabled={loading}
                     className="flex-1 sm:flex-none rounded-md bg-red-600 px-3 py-1.5 text-sm text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     Delete Selected
-                  </button>
+                  </motion.button>
                 </div>
               </div>
             )}
@@ -420,8 +489,9 @@ function CallHistory() {
           </>
         )}
       </Card>
+        </motion.div>
 
-      {/* Bulk Delete Confirmation Modal */}
+        {/* Bulk Delete Confirmation Modal */}
       <Modal 
         isOpen={showDeleteModal} 
         onClose={() => setShowDeleteModal(false)}
@@ -658,7 +728,8 @@ function CallHistory() {
           )}
         </div>
       </Modal>
-    </div>
+      </div>
+    </PageTransition>
   )
 }
 

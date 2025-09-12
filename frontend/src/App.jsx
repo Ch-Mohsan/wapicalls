@@ -1,5 +1,6 @@
 import React from 'react'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { AnimatePresence } from 'framer-motion'
 import DashboardLayout from './layouts/DashboardLayout.jsx'
 import ProtectedLayout from './layouts/ProtectedLayout.jsx'
 import PublicLayout from './layouts/PublicLayout.jsx'
@@ -29,10 +30,12 @@ function RootRedirect() {
   return isAuthenticated ? <Navigate to="/dashboard" replace /> : <Navigate to="/landing" replace />
 }
 
-function App() {
+function AnimatedRoutes() {
+  const location = useLocation()
+  
   return (
-    <BrowserRouter>
-      <Routes>
+    <AnimatePresence mode="wait" initial={false}>
+      <Routes location={location} key={location.pathname}>
         <Route path="/" element={<RootRedirect />} />
         
         <Route element={<PublicLayout />}> 
@@ -56,6 +59,14 @@ function App() {
         {/* Catch-all route - redirect to landing for unmatched routes */}
         <Route path="*" element={<Navigate to="/landing" replace />} />
       </Routes>
+    </AnimatePresence>
+  )
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <AnimatedRoutes />
     </BrowserRouter>
   )
 }

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react'
+import { motion } from 'framer-motion'
 import { useNavigate, Link } from 'react-router-dom'
+import PageTransition from '../components/PageTransition.jsx'
 import { useAuth } from '../store/AuthContext.jsx'
 
 function Signup() {
@@ -97,9 +99,28 @@ function Signup() {
   }
 
   return (
-    <div className="mx-auto max-w-md">
-      <h1 className="mb-6 text-center text-3xl font-bold text-primary">Create your account</h1>
-      <form onSubmit={onSubmit} className="space-y-4 rounded-lg border border-accent/40 bg-white/90 p-6 shadow-sm">
+    <PageTransition>
+      <motion.div 
+        className="mx-auto max-w-md"
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.6 }}
+      >
+        <motion.h1 
+          className="mb-6 text-center text-3xl font-bold text-primary"
+          initial={{ y: -20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.2, duration: 0.5 }}
+        >
+          Create your account
+        </motion.h1>
+        <motion.form 
+          onSubmit={onSubmit} 
+          className="space-y-4 rounded-lg border border-accent/40 bg-white/90 p-6 shadow-sm"
+          initial={{ y: 30, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.3, duration: 0.6 }}
+        >
         
         {/* Global error message */}
         {error?.message && !error?.errors && (
@@ -189,22 +210,31 @@ function Signup() {
         </div>
 
         {/* Submit button */}
-        <button 
+        <motion.button 
           type="submit"
           disabled={submitting || loading}
           className="w-full rounded-md bg-secondary px-4 py-2 font-medium text-white hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed"
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          transition={{ type: "spring", stiffness: 400, damping: 30 }}
         >
           {submitting ? 'Creating account...' : 'Create account'}
-        </button>
-      </form>
+        </motion.button>
+      </motion.form>
       
-      <p className="mt-3 text-center text-sm text-slate-600">
+      <motion.p 
+        className="mt-3 text-center text-sm text-slate-600"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.5, duration: 0.5 }}
+      >
         Already have an account?{' '}
         <Link className="text-secondary underline hover:text-secondary/80" to="/login">
           Sign in
         </Link>
-      </p>
-    </div>
+      </motion.p>
+    </motion.div>
+    </PageTransition>
   )
 }
 

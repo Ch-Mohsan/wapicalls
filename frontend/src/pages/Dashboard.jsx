@@ -1,7 +1,9 @@
 import React from 'react'
+import { motion } from 'framer-motion'
 import StatCard from '../components/StatCard.jsx'
 import ProgressBar from '../components/ProgressBar.jsx'
 import Card from '../components/Card.jsx'
+import PageTransition from '../components/PageTransition.jsx'
 import { Link } from 'react-router-dom'
 import { useDashboardStats } from '../store/useDashboardStats.js'
 
@@ -77,21 +79,37 @@ function Dashboard() {
     )
   }
   return (
-    <div className="space-y-8 animate-in fade-in-50 duration-500">
-      {/* Header */}
-      <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
-        <div className="space-y-1">
-          <h1 className="text-3xl font-bold tracking-tight text-primary">Dashboard</h1>
-          <p className="text-sm text-slate-600">Track performance and manage campaigns</p>
-        </div>
-        <Link to="/campaigns" className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-white shadow hover:opacity-90">
-          <Icon name="phone" className="h-4 w-4 text-white" />
-          New Campaign
-        </Link>
-      </div>
+    <PageTransition>
+      <div className="space-y-8">
+        {/* Header */}
+        <motion.div 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center"
+        >
+          <div className="space-y-1">
+            <h1 className="text-3xl font-bold tracking-tight text-primary">Dashboard</h1>
+            <p className="text-sm text-slate-600">Track performance and manage campaigns</p>
+          </div>
+          <motion.div
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <Link to="/campaigns" className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-white shadow hover:opacity-90 transition-opacity">
+              <Icon name="phone" className="h-4 w-4 text-white" />
+              New Campaign
+            </Link>
+          </motion.div>
+        </motion.div>
 
-      {/* Stat Cards */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        {/* Stat Cards */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="grid gap-6 md:grid-cols-2 lg:grid-cols-4"
+        >
         <StatCard 
           title="Total Calls" 
           value={stats.totalCalls.toString()} 
@@ -116,10 +134,15 @@ function Dashboard() {
           trend={stats.activeCampaigns > 0 ? "+3" : "0"} 
           icon={<Icon name="check" />} 
         />
-      </div>
+        </motion.div>
 
-      {/* Analytics + Quick Cards */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        {/* Analytics + Quick Cards */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+          className="grid grid-cols-1 gap-6 lg:grid-cols-3"
+        >
         <Card className="lg:col-span-2" title={<div className="flex items-center gap-2"><Icon name="activity" /><span>Call Performance</span></div>} subtitle="Detailed analytics for the last 30 days" actions={<span className="rounded-full border border-secondary/40 px-3 py-1 text-xs">Live Data</span>}>
           <div className="relative h-[280px] rounded-xl border-2 border-dashed border-secondary/40 bg-secondary/20 flex items-center justify-center">
             <div className="text-center space-y-2">
@@ -180,7 +203,7 @@ function Dashboard() {
             )}
           </div>
         </Card>
-      </div>
+        </motion.div>
 
       {/* Quick Actions */}
       <Card title={<div className="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg><span>Quick Actions</span></div>} subtitle="Streamline your workflow with one-click actions">
@@ -214,9 +237,21 @@ function Dashboard() {
           <Link to="/scripts" className="inline-flex items-center gap-2 rounded-md border border-secondary/40 bg-white px-4 py-2 text-sm text-primary hover:bg-secondary/20">View All Templates<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg></Link>
         </div>
 
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
+        <motion.div 
+          className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4"
+          initial={{ y: 30, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.6, duration: 0.6 }}
+        >
           {[{t:'Cold Outreach',d:'Reach new prospects with personalized messaging.'},{t:'Product Launch',d:'Announce new products to your audience.'},{t:'Follow-up',d:'Re-engage warm leads and nurture.'},{t:'Event Invitation',d:'Invite prospects to webinars and demos.'}].map((tpl, idx) => (
-            <div key={idx} className="group cursor-pointer overflow-hidden rounded-lg border border-secondary/40 bg-white/80 shadow-sm transition-all hover:scale-[1.01] hover:shadow-md">
+            <motion.div 
+              key={idx} 
+              className="group cursor-pointer overflow-hidden rounded-lg border border-secondary/40 bg-white/80 shadow-sm transition-all hover:scale-[1.01] hover:shadow-md"
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.7 + idx * 0.1, duration: 0.5 }}
+              whileHover={{ y: -5 }}
+            >
               <div className="p-6">
                 <div className="mb-3 w-fit rounded-2xl bg-secondary/30 p-4"><Icon name={idx===0?'trend':idx===1?'activity':idx===2?'check':'calendar'} /></div>
                 <div className="text-lg font-semibold text-primary group-hover:opacity-90">{tpl.t}</div>
@@ -226,11 +261,12 @@ function Dashboard() {
                 <div className="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> 2-3 hours</div>
                 <div className="flex items-center gap-2 text-primary"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg> 24% success</div>
               </div>
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       </div>
-    </div>
+      </div>
+    </PageTransition>
   )
 }
 

@@ -1,9 +1,11 @@
 import React, { useMemo, useState, useEffect } from 'react'
+import { motion } from 'framer-motion'
 import Card from '../components/Card.jsx'
 import Badge from '../components/Badge.jsx'
 import Modal from '../components/Modal.jsx'
 import NewLeadForm from '../components/NewLeadForm.jsx'
 import CSVUpload from '../components/CSVUpload.jsx'
+import PageTransition from '../components/PageTransition.jsx'
 import { Table } from '../components/Table.jsx'
 import { useLeads } from '../store/LeadsContext.jsx'
 import { useToast } from '../store/ToastContext.jsx'
@@ -221,28 +223,38 @@ function Leads() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-semibold text-primary">Leads</h1>
-          <p className="text-sm text-slate-600">Manage and import leads</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button 
-            onClick={() => setShowCSVModal(true)}
-            className="rounded-md border border-accent/40 bg-white px-3 py-2 text-sm text-primary hover:bg-accent/20 disabled:opacity-50"
-            disabled={loading || actionLoading}
-          >
+    <PageTransition>
+      <div className="space-y-6">
+        <motion.div 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center"
+        >
+          <div className="space-y-1">
+            <h1 className="text-2xl font-semibold text-primary">Leads</h1>
+            <p className="text-sm text-slate-600">Manage and import leads</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <motion.button 
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setShowCSVModal(true)}
+              className="rounded-md border border-accent/40 bg-white px-3 py-2 text-sm text-primary hover:bg-accent/20 disabled:opacity-50 transition-colors"
+            >
             Import CSV
-          </button>
-          <button 
-            onClick={() => setShowNewLeadModal(true)}
-            className="rounded-md bg-secondary px-3 py-2 text-sm text-white hover:opacity-90 disabled:opacity-50"
-            disabled={loading || actionLoading}
-          >
-            New Lead
-          </button>
-        </div>
+            </motion.button>
+            <motion.button 
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setShowNewLeadModal(true)}
+              className="rounded-md bg-secondary px-3 py-2 text-sm text-white hover:opacity-90 disabled:opacity-50 transition-colors"
+              disabled={loading || actionLoading}
+            >
+              New Lead
+            </motion.button>
+          </div>
+        </motion.div>
       </div>
 
       {error && (
@@ -388,7 +400,7 @@ function Leads() {
           loading={actionLoading}
         />
       </Modal>
-    </div>
+    </PageTransition>
   )
 }
 
