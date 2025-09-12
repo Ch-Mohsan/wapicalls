@@ -15,6 +15,8 @@ function CallHistory() {
   const [totalPages, setTotalPages] = useState(1)
   const [selectedCall, setSelectedCall] = useState(null)
   const [showCallModal, setShowCallModal] = useState(false)
+  const [selectedCalls, setSelectedCalls] = useState([])
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
   const { showError, showSuccess } = useToast()
 
   // Load calls from backend
@@ -48,6 +50,11 @@ function CallHistory() {
     loadCalls()
   }, [page, query, status])
 
+  // Clear selection when calls change or page changes
+  useEffect(() => {
+    setSelectedCalls([])
+  }, [page, query, status])
+
   // Format call duration
   const formatDuration = (duration) => {
     if (!duration) return 'N/A'
@@ -71,6 +78,47 @@ function CallHistory() {
         return 'warning'
       default:
         return 'default'
+    }
+  }
+
+  // Bulk selection functions
+  const selectedIds = new Set(selectedCalls)
+  
+  const handleToggleRow = (callId) => {
+    setSelectedCalls(prev => 
+      prev.includes(callId) 
+        ? prev.filter(id => id !== callId)
+        : [...prev, callId]
+    )
+  }
+
+  const handleToggleAll = () => {
+    if (selectedCalls.length === calls.length) {
+      setSelectedCalls([])
+    } else {
+      setSelectedCalls(calls.map(call => call._id))
+    }
+  }
+
+  const handleBulkDelete = async () => {
+    if (selectedCalls.length === 0) {
+      showError('No calls selected for deletion')
+      return
+    }
+    
+    try {
+      setLoading(true)
+      const response = await ApiClient.delete('/api/calls/bulk', { callIds: selectedCalls })
+      showSuccess(`Successfully deleted ${selectedCalls.length} call(s)`)
+      setSelectedCalls([])
+      setShowDeleteModal(false)
+      await loadCalls()
+    } catch (error) {
+      console.error('Error deleting calls:', error)
+      const errorMessage = error?.data?.message || error?.message || 'Failed to delete selected calls'
+      showError(errorMessage)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -328,10 +376,39 @@ function CallHistory() {
           </div>
         ) : (
           <>
+            {/* Bulk Actions Bar */}
+            {selectedCalls.length > 0 && (
+              <div className="mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-lg bg-blue-50 p-3 border border-blue-200">
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-medium text-blue-900">
+                    {selectedCalls.length} call{selectedCalls.length !== 1 ? 's' : ''} selected
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <button
+                    onClick={() => setSelectedCalls([])}
+                    className="flex-1 sm:flex-none rounded-md border border-blue-300 bg-white px-3 py-1.5 text-sm text-blue-700 hover:bg-blue-50 transition-colors"
+                  >
+                    Clear Selection
+                  </button>
+                  <button
+                    onClick={() => setShowDeleteModal(true)}
+                    disabled={loading}
+                    className="flex-1 sm:flex-none rounded-md bg-red-600 px-3 py-1.5 text-sm text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Delete Selected
+                  </button>
+                </div>
+              </div>
+            )}
+            
             <Table
               columns={columns}
               rows={calls}
               getRowId={(call) => call._id}
+              selectedIds={selectedIds}
+              onToggleRow={handleToggleRow}
+              onToggleAll={handleToggleAll}
               renderActions={renderActions}
             />
             
@@ -365,6 +442,37 @@ function CallHistory() {
           </>
         )}
       </Card>
+
+      {/* Bulk Delete Confirmation Modal */}
+      <Modal 
+        isOpen={showDeleteModal} 
+        onClose={() => setShowDeleteModal(false)}
+        title="Delete Selected Calls"
+        maxWidth="max-w-md"
+      >
+        <div className="space-y-4">
+          <div className="text-sm text-slate-700">
+            Are you sure you want to delete <strong>{selectedCalls.length}</strong> selected call{selectedCalls.length !== 1 ? 's' : ''}? 
+            This action cannot be undone.
+          </div>
+          
+          <div className="flex items-center justify-end gap-3 pt-4">
+            <button
+              onClick={() => setShowDeleteModal(false)}
+              className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleBulkDelete}
+              disabled={loading}
+              className="rounded-md bg-red-600 px-4 py-2 text-sm text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {loading ? 'Deleting...' : 'Delete Calls'}
+            </button>
+          </div>
+        </div>
+      </Modal>
 
       {/* Enhanced Call Details Modal */}
       <Modal 

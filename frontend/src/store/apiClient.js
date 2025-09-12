@@ -56,5 +56,5 @@ export const ApiClient = {
   post: (p, body, opts) => apiFetch(p, { ...opts, method: 'POST', body }),
   put: (p, body, opts) => apiFetch(p, { ...opts, method: 'PUT', body }),
   patch: (p, body, opts) => apiFetch(p, { ...opts, method: 'PATCH', body }),
-  delete: (p, opts) => apiFetch(p, { ...opts, method: 'DELETE' }),
+  delete: (p, body, opts) => apiFetch(p, { ...opts, method: 'DELETE', body }),
 }

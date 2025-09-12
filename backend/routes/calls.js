@@ -5,6 +5,7 @@ import {
   createCall,
   updateCall,
   deleteCall,
+  deleteBulkCalls,
   handleVapiWebhook,
   refreshCallFromVapi,
   testPhoneFormat
@@ -21,6 +22,9 @@ router.use(protect);
 
 // Test phone format route
 router.post("/test-phone", testPhoneFormat);
+
+// Bulk delete route
+router.delete("/bulk", deleteBulkCalls);
 
 // CRUD routes
 router.route("/")

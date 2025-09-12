@@ -651,3 +651,52 @@ export const testPhoneFormat = async (req, res) => {
     });
   }
 };
+
+// @desc    Delete multiple calls
+// @route   DELETE /api/calls/bulk
+// @access  Private
+export const deleteBulkCalls = async (req, res) => {
+  try {
+    const { callIds } = req.body;
+
+    // Validation
+    if (!callIds || !Array.isArray(callIds) || callIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Please provide an array of call IDs"
+      });
+    }
+
+    // Verify all calls belong to the authenticated user
+    const userCalls = await Call.find({
+      _id: { $in: callIds },
+      createdBy: req.user.id
+    });
+
+    if (userCalls.length !== callIds.length) {
+      return res.status(403).json({
+        success: false,
+        message: "Some calls not found or you don't have permission to delete them"
+      });
+    }
+
+    // Delete the calls
+    const deleteResult = await Call.deleteMany({
+      _id: { $in: callIds },
+      createdBy: req.user.id
+    });
+
+    res.status(200).json({
+      success: true,
+      message: `Successfully deleted ${deleteResult.deletedCount} call(s)`,
+      deletedCount: deleteResult.deletedCount
+    });
+
+  } catch (error) {
+    console.error("Bulk delete calls error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error deleting calls"
+    });
+  }
+};
