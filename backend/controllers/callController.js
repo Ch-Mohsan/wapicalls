@@ -1,5 +1,6 @@
 import { Call } from "../models/index.js";
 import { Contact } from "../models/index.js";
+import { Script } from "../models/index.js";
 import { 
   createOutboundCall, 
   getCall as vapiGetCall 
@@ -86,16 +87,14 @@ function formatPhoneToE164(phoneNumber, defaultCountryCode = '92') {
   return null;
 }
 
-// Build assistant overrides from environment
+// Build assistant overrides from environment (only keys Vapi accepts)
 function getAssistantOverridesFromEnv() {
   const overrides = {};
 
   const firstMessage = process.env.VAPI_FIRST_MESSAGE;
-  // Remove systemMessage as it's not supported in current VAPI API
-  // const systemMessage = process.env.VAPI_SYSTEM_MESSAGE;
+  // NOTE: Vapi API rejects 'systemMessage' and 'instructions' on assistantOverrides
 
   if (firstMessage) overrides.firstMessage = firstMessage;
-  // if (systemMessage) overrides.systemMessage = systemMessage;
 
   const voiceProvider = process.env.VAPI_VOICE_PROVIDER;
   const voiceId = process.env.VAPI_VOICE_ID;
@@ -118,6 +117,15 @@ function getAssistantOverridesFromEnv() {
   }
 
   return overrides;
+}
+
+// Remove keys not accepted by Vapi assistantOverrides
+function sanitizeAssistantOverrides(input) {
+  if (!input || typeof input !== 'object') return {};
+  const copy = { ...input };
+  delete copy.systemMessage;
+  delete copy.instructions;
+  return copy;
 }
 
 // @desc    Get all calls for authenticated user
@@ -225,7 +233,7 @@ export const getCall = async (req, res) => {
 // @access  Private
 export const createCall = async (req, res) => {
   try {
-    const { contactId, phoneNumber, name, assistantOverrides } = req.body;
+    const { contactId, phoneNumber, name, assistantOverrides, scriptId } = req.body;
 
     let resolvedName = name;
     let resolvedNumber = phoneNumber;
@@ -249,7 +257,7 @@ export const createCall = async (req, res) => {
       resolvedNumber = contact.phoneNumber;
     }
 
-    // Validation
+  // Validation
     if (!resolvedNumber || !resolvedName) {
       return res.status(400).json({
         success: false,
@@ -279,13 +287,31 @@ export const createCall = async (req, res) => {
     if (USE_VAPI) {
       try {
         // Merge environment overrides with request overrides
-        const envOverrides = getAssistantOverridesFromEnv();
-        const mergedOverrides = { ...envOverrides, ...assistantOverrides };
+  const envOverrides = getAssistantOverridesFromEnv();
+  const mergedOverrides = { ...envOverrides, ...assistantOverrides };
 
-        // Ensure the assistant will talk
-        if (!mergedOverrides.firstMessage) {
-          mergedOverrides.firstMessage = process.env.VAPI_FIRST_MESSAGE || "Hello! This is your AI assistant calling.";
+        // If a script is provided, try to fetch its systemMessage
+        let scriptSystemMessage = null;
+        if (scriptId) {
+          try {
+            const s = await Script.findById(scriptId).lean();
+            if (s?.systemMessage) scriptSystemMessage = s.systemMessage;
+          } catch (e) {
+            console.warn('Failed to fetch script systemMessage:', e.message);
+          }
         }
+
+        // Ensure the assistant will talk and embed systemMessage as prefix
+        const defaultGreeting = process.env.VAPI_FIRST_MESSAGE || "Hello! This is your AI assistant calling.";
+        if (scriptSystemMessage) {
+          const prefix = `Please follow these instructions for this call:\n${scriptSystemMessage}`;
+          mergedOverrides.firstMessage = `${prefix}\n\n${mergedOverrides.firstMessage || defaultGreeting}`;
+          // Do NOT set unsupported keys
+        } else if (!mergedOverrides.firstMessage) {
+          mergedOverrides.firstMessage = defaultGreeting;
+        }
+
+        const safeOverrides = sanitizeAssistantOverrides(mergedOverrides);
 
         const payload = {
           type: "outboundPhoneCall",
@@ -298,8 +324,8 @@ export const createCall = async (req, res) => {
         };
 
         // Only include assistantOverrides if we have overrides
-        if (Object.keys(mergedOverrides).length > 0) {
-          payload.assistantOverrides = mergedOverrides;
+        if (Object.keys(safeOverrides).length > 0) {
+          payload.assistantOverrides = safeOverrides;
         }
 
         console.log("=== VAPI CALL PAYLOAD ===");
@@ -338,8 +364,14 @@ export const createCall = async (req, res) => {
       name: resolvedName,
       status: "initiated",
       transcript: null,
+      script: scriptId || null,
       createdBy: req.user.id
     });
+
+    // Increment script usage if provided
+    if (scriptId) {
+      try { await Script.findByIdAndUpdate(scriptId, { $inc: { usageCount: 1 } }); } catch {}
+    }
 
     const populatedCall = await Call.findById(call._id)
       .populate("contact", "name email company phoneNumber")

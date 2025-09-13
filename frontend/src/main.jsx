@@ -7,6 +7,7 @@ import { LeadsProvider } from './store/LeadsContext.jsx'
 import { UIProvider } from './store/UIContext.jsx'
 import { ToastProvider } from './store/ToastContext.jsx'
 import { CampaignsProvider } from './store/CampaignsContext.jsx'
+import { ScriptsProvider } from './store/ScriptsContext.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -15,7 +16,9 @@ createRoot(document.getElementById('root')).render(
         <AuthProvider>
           <LeadsProvider>
             <CampaignsProvider>
-              <App />
+              <ScriptsProvider>
+                <App />
+              </ScriptsProvider>
             </CampaignsProvider>
           </LeadsProvider>
         </AuthProvider>

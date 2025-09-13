@@ -10,8 +10,10 @@ import { Table } from '../components/Table.jsx'
 import { useLeads } from '../store/LeadsContext.jsx'
 import { useToast } from '../store/ToastContext.jsx'
 import { ApiClient } from '../store/apiClient.js'
+import { useScripts } from '../store/ScriptsContext.jsx'
 
 function Leads() {
+  const { selectedScriptId } = useScripts()
   const { leads, loading, error, createLead, bulkImportLeads, deleteLead } = useLeads()
   const { showSuccess, showError, showWarning } = useToast()
   
@@ -51,7 +53,8 @@ function Leads() {
       const response = await ApiClient.post('/api/calls', {
         contactId: leadId,
         phoneNumber: lead.phone,
-        name: lead.name || 'Unknown'
+        name: lead.name || 'Unknown',
+        scriptId: selectedScriptId || undefined
       })
 
       if (response.vapiCallId) {

@@ -84,6 +84,11 @@ const callSchema = new mongoose.Schema(
       ref: "Campaign",
       default: null
     },
+    script: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Script",
+      default: null
+    },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",

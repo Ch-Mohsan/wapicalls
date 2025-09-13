@@ -21,7 +21,7 @@ function Card({ title, subtitle, actions, children, className = '', clickable = 
       }}
       onClick={clickable ? onClick : undefined}
       className={[
-        "rounded-lg border border-secondary/40 bg-white/80 shadow-sm",
+        "rounded-lg border border-secondary/40 bg-white/80 shadow-sm overflow-hidden",
         clickable ? "cursor-pointer" : "",
         className
       ].join(' ')}

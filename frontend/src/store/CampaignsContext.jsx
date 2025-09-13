@@ -1,4 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { useScripts } from './ScriptsContext.jsx'
 import { ApiClient } from './apiClient.js'
 
 const CampaignsContext = createContext(null)
@@ -8,6 +9,7 @@ export function CampaignsProvider({ children }) {
   const [calls, setCalls] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const { selectedScriptId } = useScripts?.() || { selectedScriptId: null }
 
   const loadCampaigns = useCallback(async () => {
     setLoading(true)
@@ -96,7 +98,10 @@ export function CampaignsProvider({ children }) {
     setLoading(true)
     setError(null)
     try {
-      const data = await ApiClient.post('/api/calls', payload)
+      const data = await ApiClient.post('/api/calls', {
+        ...payload,
+        scriptId: payload.scriptId ?? selectedScriptId ?? undefined,
+      })
       const newCall = {
         id: data._id,
         contactName: data.contact?.name || data.contactName || 'Unknown',

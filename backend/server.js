@@ -12,6 +12,7 @@ import authRoutes from "./routes/auth.js";
 import contactRoutes from "./routes/contacts.js";
 import callRoutes from "./routes/calls.js";
 import campaignRoutes from "./routes/campaigns.js";
+import scriptRoutes from "./routes/scripts.js";
 
 // Import existing VAPI services and utils
 import { normalizeVapiEventType, extractCallIdFromEvent, deriveStatusAndTranscript } from "./utils/vapiEvents.js";
@@ -77,6 +78,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/contacts", contactRoutes);
 app.use("/api/calls", callRoutes);
 app.use("/api/campaigns", campaignRoutes);
+app.use("/api/scripts", scriptRoutes);
 
 // Health check
 app.get("/api/health", (req, res) => {
@@ -322,6 +324,13 @@ app.listen(PORT, () => {
   console.log("  - GET /api/campaigns/:id");
   console.log("  - PUT /api/campaigns/:id");
   console.log("  - DELETE /api/campaigns/:id");
+  console.log("\n📝 Scripts:");
+  console.log("  - GET /api/scripts");
+  console.log("  - POST /api/scripts");
+  console.log("  - GET /api/scripts/:id");
+  console.log("  - PUT /api/scripts/:id");
+  console.log("  - DELETE /api/scripts/:id");
+  console.log("  - POST /api/scripts/:id/duplicate");
   console.log("\n🔧 Legacy/Debug:");
   console.log("  - POST /api/vapi/webhook");
   console.log("  - GET /api/calls");
