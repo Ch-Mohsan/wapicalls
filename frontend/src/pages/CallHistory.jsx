@@ -582,13 +582,6 @@ function CallHistory() {
                   </div>
                   
                   <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-1">Duration</label>
-                    <div className="text-sm text-slate-900">
-                      {formatDuration(selectedCall.duration)}
-                    </div>
-                  </div>
-                  
-                  <div>
                     <label className="block text-xs font-medium text-slate-600 mb-1">End Reason</label>
                     <div className="text-sm text-slate-900">
                       {selectedCall.endReason || 'Not specified'}
