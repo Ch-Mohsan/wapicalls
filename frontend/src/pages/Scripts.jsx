@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Card from '../components/Card.jsx'
 import Modal from '../components/Modal.jsx'
 import { useScripts } from '../store/ScriptsContext.jsx'
@@ -47,6 +47,13 @@ function Scripts() {
   const [showModal, setShowModal] = useState(false)
   const [editing, setEditing] = useState(null)
   const [saving, setSaving] = useState(false)
+  const [openMenuId, setOpenMenuId] = useState(null)
+
+  useEffect(() => {
+    const onDocClick = () => setOpenMenuId(null)
+    document.addEventListener('click', onDocClick)
+    return () => document.removeEventListener('click', onDocClick)
+  }, [])
 
   const handleNew = () => { setEditing(null); setShowModal(true) }
   const handleEdit = (s) => { setEditing(s); setShowModal(true) }
@@ -71,7 +78,6 @@ function Scripts() {
   }
 
   const onDelete = async (s) => {
-    if (!confirm(`Delete script "${s.title}"?`)) return
     try {
       await remove(s._id)
       showSuccess('Script deleted')
@@ -95,6 +101,7 @@ function Scripts() {
           <p className="text-sm text-slate-600">Create and manage call scripts</p>
         </div>
         <div className="flex items-center gap-2">
+          <button onClick={() => setSelectedScriptId(null)} className="rounded-md border border-accent/40 bg-white px-3 py-2 text-sm text-primary hover:bg-accent/20">Clear selection</button>
           <button onClick={handleNew} className="rounded-md bg-secondary px-3 py-2 text-sm text-white hover:opacity-90">New Script</button>
         </div>
       </div>
@@ -103,7 +110,7 @@ function Scripts() {
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {(scripts || []).map((s) => (
-          <div key={s._id} className="relative group">
+          <div key={s._id} className="relative">
             <Card 
               title={
                 <div className="flex items-start justify-between gap-2">
@@ -113,13 +120,23 @@ function Scripts() {
                   </div>
                   <div className="absolute right-3 top-3">
                     <div className="relative">
-                      <button className="inline-flex h-8 w-8 items-center justify-center rounded-md hover:bg-accent/30 text-slate-600" aria-label="Open menu">
+                      <button 
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-md hover:bg-accent/30 text-slate-600"
+                        aria-label="Open menu"
+                        aria-haspopup="menu"
+                        aria-expanded={openMenuId === s._id}
+                        onClick={(e)=>{ e.stopPropagation(); setOpenMenuId((prev)=> prev===s._id ? null : s._id) }}
+                      >
                         <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10 3a1.5 1.5 0 110 3 1.5 1.5 0 010-3zM10 8.5a1.5 1.5 0 110 3 1.5 1.5 0 010-3zM10 14a1.5 1.5 0 110 3 1.5 1.5 0 010-3z"/></svg>
                       </button>
-                      <div className="invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-opacity absolute right-0 z-10 mt-1 w-36 rounded-md border border-accent/40 bg-white shadow-md">
-                        <button onClick={() => handleEdit(s)} className="block w-full px-3 py-2 text-left text-sm hover:bg-accent/20">Edit</button>
-                        <button onClick={() => onDuplicate(s)} className="block w-full px-3 py-2 text-left text-sm hover:bg-accent/20">Duplicate</button>
-                        <button onClick={() => onDelete(s)} className="block w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50">Delete</button>
+                      <div 
+                        onClick={(e)=> e.stopPropagation()}
+                        className={`absolute right-0 z-10 mt-1 w-36 rounded-md border border-accent/40 bg-white shadow-md transition-opacity ${openMenuId===s._id ? 'visible opacity-100 pointer-events-auto' : 'invisible opacity-0 pointer-events-none'}`}
+                        role="menu"
+                      >
+                        <button onClick={() => { setOpenMenuId(null); handleEdit(s) }} className="block w-full px-3 py-2 text-left text-sm hover:bg-accent/20" role="menuitem">Edit</button>
+                        <button onClick={() => { setOpenMenuId(null); onDuplicate(s) }} className="block w-full px-3 py-2 text-left text-sm hover:bg-accent/20" role="menuitem">Duplicate</button>
+                        <button onClick={() => { setOpenMenuId(null); onDelete(s) }} className="block w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50" role="menuitem">Delete</button>
                       </div>
                     </div>
                   </div>
@@ -128,8 +145,12 @@ function Scripts() {
             >
               <div className="flex items-center justify-between text-sm text-slate-600">
                 <div>Usage: <span className="font-medium text-primary">{s.usageCount || 0}</span></div>
-                <label className="inline-flex items-center gap-2">
-                  <input type="radio" name="selected-script" checked={selectedScriptId === s._id} onChange={()=>setSelectedScriptId(s._id)} />
+                <label className="inline-flex items-center gap-2 select-none">
+                  <input 
+                    type="checkbox"
+                    checked={selectedScriptId === s._id}
+                    onChange={(e)=> setSelectedScriptId(e.target.checked ? s._id : null)}
+                  />
                   Use for new calls
                 </label>
               </div>

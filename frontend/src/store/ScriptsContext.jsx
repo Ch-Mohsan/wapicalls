@@ -7,7 +7,14 @@ export function ScriptsProvider({ children }) {
   const [scripts, setScripts] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
-  const [selectedScriptId, setSelectedScriptId] = useState(null)
+  const [selectedScriptId, setSelectedScriptId] = useState(() => {
+    try {
+      if (typeof window === 'undefined') return null
+      return window.localStorage.getItem('selectedScriptId') || null
+    } catch {
+      return null
+    }
+  })
 
   const load = async () => {
     setLoading(true)
@@ -16,9 +23,15 @@ export function ScriptsProvider({ children }) {
       const res = await ApiClient.get('/api/scripts')
       const list = res?.data || res || []
       setScripts(list)
-      // auto-select default if any
-      const def = list.find(s => s.isDefault)
-      if (def) setSelectedScriptId(def._id)
+      // Keep a valid current selection if it still exists; otherwise use saved; otherwise clear
+      const saved = (typeof window !== 'undefined') ? window.localStorage.getItem('selectedScriptId') : null
+      setSelectedScriptId(prev => {
+        const prevIsValid = prev && list.some(s => s._id === prev)
+        const savedIsValid = saved && list.some(s => s._id === saved)
+        if (prevIsValid) return prev
+        if (savedIsValid) return saved
+        return null
+      })
     } catch (e) {
       setError(e)
     } finally {
@@ -61,6 +74,13 @@ export function ScriptsProvider({ children }) {
     create, update, remove, duplicate,
     selectedScriptId, setSelectedScriptId,
   }), [scripts, loading, error, selectedScriptId])
+
+  // persist selection
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    if (selectedScriptId) window.localStorage.setItem('selectedScriptId', selectedScriptId)
+    else window.localStorage.removeItem('selectedScriptId')
+  }, [selectedScriptId])
 
   return <ScriptsContext.Provider value={value}>{children}</ScriptsContext.Provider>
 }
