@@ -3,8 +3,19 @@ import { motion } from 'framer-motion'
 import Card from '../components/Card.jsx'
 import ProgressBar from '../components/ProgressBar.jsx'
 import PageTransition from '../components/PageTransition.jsx'
+import { useAnalyticsStats } from '../store/useAnalyticsStats.js'
+import LineChart from '../components/LineChart.jsx'
+
+function formatDurationSec(sec) {
+  const s = Math.max(0, Math.floor(sec || 0))
+  const m = Math.floor(s / 60)
+  const rem = s % 60
+  return `${m}m ${rem}s`
+}
 
 function Analytics() {
+  const { stats, loading, error } = useAnalyticsStats()
+
   return (
     <PageTransition>
       <div className="space-y-6">
@@ -18,13 +29,22 @@ function Analytics() {
           <p className="text-sm text-slate-600">Performance and insights</p>
         </motion.div>
 
+        {error && (
+          <div className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-600">{error}</div>
+        )}
+
         <motion.div 
           className="grid gap-4 md:grid-cols-2 lg:grid-cols-4"
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.2, duration: 0.6 }}
         >
-          {[{t:'Calls',v:'1,820'},{t:'Success',v:'38%'},{t:'Avg Call Time',v:'3m 42s'},{t:'Callbacks',v:'126'}].map((m, index)=> (
+          {[
+            {t:'Calls',v: loading ? '—' : stats.total.toLocaleString()},
+            {t:'Success',v: loading ? '—' : `${stats.successRate}%`},
+            {t:'Avg Call Time',v: loading ? '—' : formatDurationSec(stats.avgDurationSec)},
+            {t:'Callbacks',v: loading ? '—' : stats.callbacks.toLocaleString()},
+          ].map((m, index)=> (
             <motion.div
               key={m.t}
               initial={{ y: 20, opacity: 0 }}
@@ -50,16 +70,20 @@ function Analytics() {
             animate={{ x: 0, opacity: 1 }}
             transition={{ delay: 0.8, duration: 0.5 }}
           >
-            <Card className="lg:col-span-2" title="Success Rate (30 days)" subtitle="Daily trend">
-              <div className="flex h-64 items-center justify-center rounded-lg border-2 border-dashed border-accent/40 bg-white/70">
-                <div className="text-sm text-slate-600">Chart placeholder</div>
+            <Card className="lg:col-span-2" title="Success Rate (30 days)" subtitle={loading ? 'Loading…' : `Daily trend`}>
+              <div className="rounded-lg border border-accent/30 bg-white/70 px-2 py-3">
+                {loading ? (
+                  <div className="flex h-64 items-center justify-center text-sm text-slate-600">Loading chart…</div>
+                ) : (
+                  <LineChart data={stats.trend30} height={260} />
+                )}
               </div>
               <div className="mt-4 space-y-2">
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-slate-600">Goal</span>
                   <span className="text-primary">50%</span>
                 </div>
-                <ProgressBar value={38} />
+                <ProgressBar value={loading ? 0 : stats.success30} />
               </div>
             </Card>
           </motion.div>
@@ -70,19 +94,22 @@ function Analytics() {
           >
             <Card title="Top Campaigns" subtitle="By success rate">
               <div className="space-y-3">
-                {[{n:'Product Launch',s:42},{n:'Cold Outreach',s:31},{n:'Follow-up',s:29}].map((c, index)=> (
+                {(loading ? [] : stats.topCampaigns).map((c, index)=> (
                   <motion.div 
-                    key={c.n} 
+                    key={c.id} 
                     className="flex items-center justify-between rounded-md border border-accent/40 bg-white p-3"
                     initial={{ x: 20, opacity: 0 }}
                     animate={{ x: 0, opacity: 1 }}
                     transition={{ delay: 1.0 + index * 0.1, duration: 0.4 }}
                     whileHover={{ scale: 1.02 }}
                   >
-                    <div className="text-sm text-primary">{c.n}</div>
-                    <div className="text-sm font-semibold text-primary">{c.s}%</div>
+                    <div className="text-sm text-primary">{c.name}</div>
+                    <div className="text-sm font-semibold text-primary">{c.rate}%</div>
                   </motion.div>
                 ))}
+                {!loading && stats.topCampaigns.length === 0 && (
+                  <div className="text-sm text-slate-600">No campaign data yet.</div>
+                )}
               </div>
             </Card>
           </motion.div>

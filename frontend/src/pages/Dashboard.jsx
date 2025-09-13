@@ -4,7 +4,9 @@ import StatCard from '../components/StatCard.jsx'
 import ProgressBar from '../components/ProgressBar.jsx'
 import Card from '../components/Card.jsx'
 import PageTransition from '../components/PageTransition.jsx'
+import LineChart from '../components/LineChart.jsx'
 import { Link } from 'react-router-dom'
+import { useAnalyticsStats } from '../store/useAnalyticsStats.js'
 import { useDashboardStats } from '../store/useDashboardStats.js'
 
 function Icon({ name, className = 'h-5 w-5 text-primary' }) {
@@ -27,7 +29,8 @@ function Icon({ name, className = 'h-5 w-5 text-primary' }) {
 }
 
 function Dashboard() {
-  const { stats, loading, error } = useDashboardStats()
+  const { stats: aStats, loading: aLoading, error: aError, calls } = useAnalyticsStats()
+  const { stats: dStats, loading: dLoading, error: dError } = useDashboardStats()
 
   // Format time ago helper
   const timeAgo = (date) => {
@@ -44,6 +47,9 @@ function Dashboard() {
     if (minutes > 0) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`
     return 'Just now'
   }
+
+  const loading = aLoading || dLoading
+  const error = aError || dError
 
   if (loading) {
     return (
@@ -112,26 +118,26 @@ function Dashboard() {
         >
         <StatCard 
           title="Total Calls" 
-          value={stats.totalCalls.toString()} 
-          trend={stats.totalCalls > 0 ? "+12%" : "0%"} 
+          value={aStats.total.toString()} 
+          trend={aStats.total > 0 ? "+12%" : "0%"} 
           icon={<Icon name="phone" />} 
         />
         <StatCard 
           title="Active Leads" 
-          value={stats.activeLeads.toString()} 
-          trend={stats.activeLeads > 0 ? "+20.1%" : "0%"} 
+          value={dStats.activeLeads.toString()} 
+          trend={dStats.activeLeads > 0 ? "+20.1%" : "0%"} 
           icon={<Icon name="users" />} 
         />
         <StatCard 
           title="Success Rate" 
-          value={`${stats.successRate}%`} 
-          trend={stats.successRate > 0 ? "+1.5%" : "0%"} 
+          value={`${aStats.successRate}%`} 
+          trend={aStats.successRate > 0 ? "+1.5%" : "0%"} 
           icon={<Icon name="trend" />} 
         />
         <StatCard 
           title="Active Campaigns" 
-          value={stats.activeCampaigns.toString()} 
-          trend={stats.activeCampaigns > 0 ? "+3" : "0"} 
+          value={dStats.activeCampaigns.toString()} 
+          trend={dStats.activeCampaigns > 0 ? "+3" : "0"} 
           icon={<Icon name="check" />} 
         />
         </motion.div>
@@ -144,16 +150,17 @@ function Dashboard() {
           className="grid grid-cols-1 gap-6 lg:grid-cols-3"
         >
         <Card className="lg:col-span-2" title={<div className="flex items-center gap-2"><Icon name="activity" /><span>Call Performance</span></div>} subtitle="Detailed analytics for the last 30 days" actions={<span className="rounded-full border border-secondary/40 px-3 py-1 text-xs">Live Data</span>}>
-          <div className="relative h-[280px] rounded-xl border-2 border-dashed border-secondary/40 bg-secondary/20 flex items-center justify-center">
-            <div className="text-center space-y-2">
-              <Icon name="trend" className="mx-auto h-10 w-10 text-primary" />
-              <div className="text-sm text-slate-600">Analytics visualization placeholder</div>
-            </div>
+          <div className="relative rounded-xl border border-secondary/40 bg-white/70 p-2">
+            {aLoading ? (
+              <div className="flex h-[280px] items-center justify-center text-sm text-slate-600">Loading chart…</div>
+            ) : (
+              <LineChart data={aStats.trend30} height={280} />
+            )}
           </div>
           <div className="mt-4 grid grid-cols-3 gap-4 border-t pt-4">
             <div className="text-center">
               <div className="text-2xl font-bold text-primary">
-                {stats.recentCalls.filter(call => {
+                {calls.filter(call => {
                   const today = new Date()
                   const callDate = new Date(call.createdAt)
                   return callDate.toDateString() === today.toDateString()
@@ -163,16 +170,16 @@ function Dashboard() {
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-green-700">
-                {stats.recentCalls.filter(call => 
-                  call.status === 'completed' || call.status === 'successful'
+                {calls.filter(call => 
+                  (call.status === 'completed' || call.status === 'successful')
                 ).length}
               </div>
               <div className="text-sm text-slate-600">Successful</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-secondary-700">
-                {stats.recentCalls.filter(call => 
-                  call.status === 'no-answer' || call.status === 'busy'
+                {calls.filter(call => 
+                  (call.status === 'no-answer' || call.status === 'busy')
                 ).length}
               </div>
               <div className="text-sm text-slate-600">Callbacks</div>
@@ -182,7 +189,7 @@ function Dashboard() {
 
         <Card title={<div className="flex items-center gap-2"><Icon name="calendar" /><span>Recent Activity</span></div>} subtitle="Latest updates from your campaigns">
           <div className="space-y-3">
-            {stats.recentActivity.length > 0 ? stats.recentActivity.map((item, i) => (
+            {dStats.recentActivity.length > 0 ? dStats.recentActivity.map((item, i) => (
               <div key={i} className="group flex items-start gap-3 rounded-md p-3 hover:bg-secondary/20">
                 <div className="h-8 w-8 shrink-0 rounded-xl bg-secondary/30" />
                 <div className="min-w-0 flex-1">
