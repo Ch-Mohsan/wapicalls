@@ -10,7 +10,7 @@ function Navbar({ onMenuClick }) {
         </button>
         <Link to="/dashboard" className="flex items-center gap-2">
           <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-[var(--color-secondary)] to-[var(--color-accent)]" />
-          <span className="font-semibold tracking-tight text-[var(--color-primary)]">SellSynth</span>
+          <span className="font-semibold tracking-tight text-[var(--color-primary)]">DialMate</span>
         </Link>
         <div className="ml-auto flex items-center gap-2">
           <Link to="/settings" className="inline-flex items-center rounded-md border border-[var(--color-accent)]/40 bg-white px-3 py-1.5 text-sm text-[var(--color-primary)] shadow-sm hover:bg-[var(--color-accent)]/15">Upgrade</Link>

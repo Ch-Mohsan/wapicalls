@@ -52,7 +52,7 @@ function Landing() {
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.8 }}
             >
-              SellSynth combines intelligent lead management with AI-powered voice calling. 
+              DialMate combines intelligent lead management with AI-powered voice calling. 
               Automate outreach, track conversations, and convert more prospects with real-time insights.
             </motion.p>
 
@@ -382,7 +382,7 @@ function Landing() {
             transition={{ duration: 0.6, delay: 0.2 }}
             viewport={{ once: true }}
           >
-            Join thousands of sales teams who've already transformed their outreach with SellSynth's AI-powered calling platform.
+            Join thousands of sales teams who've already transformed their outreach with DialMate's AI-powered calling platform.
           </motion.p>
           
           <motion.div 
