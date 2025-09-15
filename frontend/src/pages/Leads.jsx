@@ -11,6 +11,7 @@ import { useLeads } from '../store/LeadsContext.jsx'
 import { useToast } from '../store/ToastContext.jsx'
 import { ApiClient } from '../store/apiClient.js'
 import { useScripts } from '../store/ScriptsContext.jsx'
+import { useNavigate } from 'react-router-dom'
 
 function Leads() {
   const { selectedScriptId } = useScripts()
@@ -25,6 +26,7 @@ function Leads() {
   const [showCSVModal, setShowCSVModal] = useState(false)
   const [actionLoading, setActionLoading] = useState(false)
   const [callStates, setCallStates] = useState({}) // Track call states for each lead
+  const navigate = useNavigate()
   const pageSize = 8
 
   const filtered = useMemo(() => {
@@ -220,9 +222,31 @@ function Leads() {
     }
   }
 
-  // Add Start Campaign functionality
+  // Start a campaign from selected leads and redirect
   const handleStartCampaign = async () => {
-    showWarning('Campaign functionality is not available yet. Use the Call button to make individual calls.')
+    if (selected.size === 0) {
+      showWarning('Select at least one lead to start a campaign')
+      return
+    }
+    setActionLoading(true)
+    try {
+      const body = {
+        name: `Campaign - ${new Date().toLocaleString()}`,
+        contactIds: Array.from(selected),
+        scriptId: selectedScriptId || undefined,
+      }
+      const res = await ApiClient.post('/api/campaigns/create-and-start', body)
+      const count = res?.data?.data?.count || res?.data?.count || 0
+      showSuccess(`Campaign started: queued ${count} call(s).`)
+      // Clear selection and go to Campaigns page
+      setSelected(new Set())
+      navigate('/campaigns')
+    } catch (e) {
+      const msg = e?.response?.data?.error || e?.response?.data?.message || e?.message || 'Failed to start campaign'
+      showError(msg)
+    } finally {
+      setActionLoading(false)
+    }
   }
 
   return (

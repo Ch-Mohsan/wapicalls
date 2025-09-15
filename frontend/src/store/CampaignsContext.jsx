@@ -94,6 +94,25 @@ export function CampaignsProvider({ children }) {
     }
   }, [])
 
+  const startCampaign = useCallback(async (id, options = {}) => {
+    setLoading(true)
+    setError(null)
+    try {
+      const body = {
+        ...options,
+        scriptId: options.scriptId ?? selectedScriptId ?? undefined,
+      }
+      const res = await ApiClient.post(`/api/campaigns/${id}/start`, body)
+      return res
+    } catch (err) {
+      console.error('Error starting campaign:', err)
+      setError(err?.message || 'Failed to start campaign')
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }, [selectedScriptId])
+
   const createCall = useCallback(async (payload) => {
     setLoading(true)
     setError(null)
@@ -148,8 +167,9 @@ export function CampaignsProvider({ children }) {
     loadCalls,
     createCampaign,
     createCall,
+    startCampaign,
     deleteCampaign
-  }), [campaigns, calls, loading, error, loadCampaigns, loadCalls, createCampaign, createCall, deleteCampaign])
+  }), [campaigns, calls, loading, error, loadCampaigns, loadCalls, createCampaign, createCall, startCampaign, deleteCampaign])
 
   useEffect(() => { 
     loadCampaigns()

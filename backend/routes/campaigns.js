@@ -1,7 +1,11 @@
 import express from "express";
+import dotenv from "dotenv";
 import mongoose from "mongoose";
 import { Campaign } from "../models/index.js";
+import { protect } from "../middleware/auth.js";
+import { startCampaign, getCampaignResults, createAndStartCampaign } from "../controllers/campaignController.js";
 
+dotenv.config();
 const router = express.Router();
 
 // In-memory fallback (will be used when MongoDB is not available)
@@ -117,6 +121,15 @@ router.post("/", async (req, res) => {
     res.status(400).json({ error: error.message });
   }
 });
+
+// Start a campaign (create calls for contacts and trigger Vapi)
+router.post("/:id/start", protect, startCampaign);
+
+// Create a campaign from contacts and start immediately
+router.post("/create-and-start", protect, createAndStartCampaign);
+
+// Get campaign results summary
+router.get("/:id/results", protect, getCampaignResults);
 
 // GET /api/campaigns/:id - Get a specific campaign
 router.get("/:id", async (req, res) => {

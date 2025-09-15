@@ -15,11 +15,11 @@ createRoot(document.getElementById('root')).render(
       <UIProvider>
         <AuthProvider>
           <LeadsProvider>
-            <CampaignsProvider>
-              <ScriptsProvider>
+            <ScriptsProvider>
+              <CampaignsProvider>
                 <App />
-              </ScriptsProvider>
-            </CampaignsProvider>
+              </CampaignsProvider>
+            </ScriptsProvider>
           </LeadsProvider>
         </AuthProvider>
       </UIProvider>

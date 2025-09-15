@@ -1,17 +1,18 @@
 import React, { useMemo, useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import Card from '../components/Card.jsx'
-import Badge from '../components/Badge.jsx'
-import ProgressBar from '../components/ProgressBar.jsx'
+import CampaignCard from '../components/CampaignCard.jsx'
 import PageTransition from '../components/PageTransition.jsx'
 import { useCampaigns } from '../store/CampaignsContext.jsx'
 import { useToast } from '../store/ToastContext.jsx'
+import CampaignDetailsModal from '../components/CampaignDetailsModal.jsx'
+import { ApiClient } from '../store/apiClient.js'
 
 function Campaigns() {
   const [query, setQuery] = useState('')
   const [status, setStatus] = useState('')
-  const { campaigns, loading, error, loadCampaigns, deleteCampaign } = useCampaigns()
-  const { showError } = useToast()
+  const { campaigns, loading, error, loadCampaigns, deleteCampaign, startCampaign } = useCampaigns()
+  const { showError, showSuccess } = useToast()
 
   useEffect(() => {
     loadCampaigns()
@@ -36,6 +37,45 @@ function Campaigns() {
     }
   }
 
+  const [startingId, setStartingId] = useState(null)
+  const [detailsId, setDetailsId] = useState(null)
+  const [liveStats, setLiveStats] = useState({}) // id -> buckets
+  const handleStartCampaign = async (campaignId) => {
+    if (startingId) return
+    setStartingId(campaignId)
+    try {
+      const res = await startCampaign(campaignId)
+      const count = res?.data?.data?.count || 0
+      showSuccess(`Campaign started: queued ${count} call(s).`)
+      // kick off first refresh
+      fetchResults(campaignId)
+    } catch (e) {
+      const detail = e?.data?.error || e?.data || ''
+      showError(`Failed to start campaign${detail ? `: ${typeof detail === 'string' ? detail : (detail.message || '')}` : ''}`)
+    } finally {
+      setStartingId(null)
+    }
+  }
+
+  // Load results for a campaign to update live bucket counts
+  const fetchResults = async (campaignId) => {
+    try {
+      const res = await ApiClient.get(`/api/campaigns/${campaignId}/results`)
+      const d = res?.data?.data || {}
+      setLiveStats(prev => ({ ...prev, [campaignId]: d.buckets || { initiated:0, ringing:0, inProgress:0, ended:0 } }))
+    } catch {}
+  }
+
+  // Simple polling for running campaigns
+  useEffect(() => {
+    const running = campaigns.filter(c => c.status === 'Running')
+    if (running.length === 0) return
+    const interval = setInterval(() => {
+      running.forEach(c => fetchResults(c.id))
+    }, 5000)
+    return () => clearInterval(interval)
+  }, [campaigns])
+
   return (
     <PageTransition>
       <div className="space-y-6">
@@ -47,17 +87,7 @@ function Campaigns() {
         >
           <div className="space-y-1">
             <h1 className="text-2xl font-semibold text-primary">Campaigns</h1>
-            <p className="text-sm text-slate-600">Create and track campaigns</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <motion.a 
-              href="/campaigns/new" 
-              className="rounded-md bg-secondary px-3 py-2 text-sm text-white hover:opacity-90"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              New Campaign
-            </motion.a>
+            <p className="text-sm text-slate-600">Track campaigns started from selected leads</p>
           </div>
         </motion.div>
 
@@ -110,53 +140,26 @@ function Campaigns() {
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.5 + index * 0.1, duration: 0.5 }}
             >
-              <Card>
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <div className="text-lg font-semibold text-primary">{c.name}</div>
-                    <div className="text-xs text-slate-600">ID: {c.id}</div>
-                  </div>
-                  <Badge variant={c.status==='Running' ? 'success' : c.status==='Paused' ? 'warning' : c.status==='Completed' ? 'info' : 'default'}>{c.status}</Badge>
-                </div>
-                <div className="mt-4 space-y-2">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-600">Progress</span>
-                    <span className="text-primary font-medium">{c.progress || 0}%</span>
-                  </div>
-                  <ProgressBar value={c.progress || 0} />
-                </div>
-                <div className="mt-4 grid grid-cols-3 gap-3 text-center">
-                  <div>
-                    <div className="text-xl font-semibold text-primary">{c.totalCalls || 0}</div>
-                    <div className="text-xs text-slate-600">Calls</div>
-                  </div>
-                  <div>
-                    <div className="text-xl font-semibold text-primary">{c.successRate || 0}%</div>
-                    <div className="text-xs text-slate-600">Success</div>
-                  </div>
-                  <div className="flex items-center justify-center gap-1">
-                    <motion.button 
-                      className="rounded-md border border-accent/40 px-2 py-1 text-xs text-primary hover:bg-accent/20"
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      Details
-                    </motion.button>
-                    <motion.button 
-                      onClick={() => handleDeleteCampaign(c.id)}
-                      className="rounded-md border border-red-300 px-2 py-1 text-xs text-red-600 hover:bg-red-50"
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      Delete
-                    </motion.button>
-                  </div>
-                </div>
-              </Card>
+              <CampaignCard 
+                campaign={{
+                  id: c.id,
+                  name: c.name,
+                  status: c.status,
+                  progress: c.progress || 0,
+                  totalCalls: c.totalCalls || 0,
+                  successRate: c.successRate || 0
+                }}
+                starting={startingId === c.id}
+                buckets={liveStats[c.id]}
+                onStart={() => handleStartCampaign(c.id)}
+                onDetails={() => setDetailsId(c.id)}
+                onDelete={() => handleDeleteCampaign(c.id)}
+              />
             </motion.div>
           ))}
         </motion.div>
       )}
+      <CampaignDetailsModal open={!!detailsId} campaignId={detailsId} onClose={() => setDetailsId(null)} />
       </div>
     </PageTransition>
   )
