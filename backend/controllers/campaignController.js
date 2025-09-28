@@ -53,7 +53,7 @@ function formatPhoneToE164(phoneNumber, defaultCountryCode = '92') {
 export const startCampaign = async (req, res) => {
   try {
     const { id } = req.params;
-    const { contactIds = [], assistantOverrides, scriptId } = req.body || {};
+    const { contactIds = [], assistantOverrides, scriptId, retryAll = false } = req.body || {};
 
     let campaign = null;
     if (mongoose.Types.ObjectId.isValid(id)) {
@@ -62,12 +62,16 @@ export const startCampaign = async (req, res) => {
       } catch {}
     }
 
-    // Get contacts: explicit selection or by campaign.contacts
+    // Get contacts: explicit selection or by campaign.contacts (with fallback if none found)
     let contacts = [];
     if (Array.isArray(contactIds) && contactIds.length > 0) {
       contacts = await Contact.find({ _id: { $in: contactIds }, createdBy: req.user.id });
     } else if (campaign && Array.isArray(campaign.contacts) && campaign.contacts.length > 0) {
       contacts = await Contact.find({ _id: { $in: campaign.contacts }, createdBy: req.user.id });
+      if (!contacts.length) {
+        console.warn('[VAPI] Campaign contacts referenced but none fetched (maybe ownership mismatch) – falling back to active contacts');
+        contacts = await Contact.find({ createdBy: req.user.id, status: 'active' }).limit(50);
+      }
     } else {
       // Fallback: use all active contacts of user
       contacts = await Contact.find({ createdBy: req.user.id, status: 'active' }).limit(50);
@@ -102,8 +106,21 @@ export const startCampaign = async (req, res) => {
     const defaultGreeting = process.env.VAPI_FIRST_MESSAGE || "Hello! This is your AI assistant calling.";
     if (!mergedBase.firstMessage) mergedBase.firstMessage = defaultGreeting;
 
+    // Build set of contacts already called in this campaign (to avoid duplicates unless retryAll)
+    let alreadyCalled = new Set();
+    if (campaign && !retryAll) {
+      try {
+        const existingCalls = await Call.find({ campaign: campaign._id }, 'contact');
+        for (const ec of existingCalls) if (ec.contact) alreadyCalled.add(ec.contact.toString());
+      } catch (e) { console.warn('[VAPI] Failed to load existing calls for duplicate prevention:', e.message); }
+    }
+
     const results = [];
     for (const c of contacts) {
+      if (campaign && !retryAll && alreadyCalled.has(c._id.toString())) {
+        results.push({ contactId: c._id, status: 'skipped', reason: 'already_called' });
+        continue;
+      }
       const formatted = formatPhoneToE164(c.phoneNumber);
       if (!formatted) {
         results.push({ contactId: c._id, status: 'skipped', reason: 'invalid_number' });
@@ -174,7 +191,12 @@ export const startCampaign = async (req, res) => {
       await Campaign.findByIdAndUpdate(campaign._id, { status: 'running', startedAt: new Date(), 'statistics.totalContacts': contacts.length });
     }
 
-    res.status(200).json({ success: true, message: 'Campaign started', data: { results, count: results.length } });
+    const queued = results.filter(r => r.status === 'queued').length;
+    const skipped = results.filter(r => r.status === 'skipped').length;
+    const failed = results.filter(r => r.status === 'failed').length;
+    console.log(`[VAPI] startCampaign complete id=${id} retryAll=${retryAll} queued=${queued} skipped=${skipped} failed=${failed}`);
+    const msg = queued > 0 ? 'Campaign started' : (skipped > 0 ? 'No new contacts to call' : 'No contacts queued');
+    res.status(200).json({ success: true, message: msg, data: { results, count: results.length, queued, skipped, failed, retryAll } });
   } catch (err) {
     console.error('startCampaign error:', err);
     res.status(500).json({ success: false, message: 'Error starting campaign', error: err?.message });

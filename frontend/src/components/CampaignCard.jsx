@@ -17,7 +17,7 @@ function Icon({ name, className = 'h-4 w-4' }) {
   }
 }
 
-export default function CampaignCard({ campaign, onStart, onDetails, onDelete, starting = false, buckets = {} }) {
+export default function CampaignCard({ campaign, onStart, onRetry, onDetails, onDelete, starting = false, buckets = {} }) {
   const { id, name, status, progress = 0, totalCalls = 0, successRate = 0 } = campaign
   const badgeVariant = status === 'Running' ? 'success' : status === 'Paused' ? 'warning' : status === 'Completed' ? 'info' : 'default'
   const b = {
@@ -84,6 +84,16 @@ export default function CampaignCard({ campaign, onStart, onDetails, onDelete, s
           >
             <Icon name="play" className="h-4 w-4" /> {starting ? 'Starting…' : 'Start'}
           </motion.button>
+          {onRetry && (
+            <motion.button
+              onClick={onRetry}
+              className="inline-flex items-center gap-2 rounded-md border border-amber-300 bg-amber-50 px-4 py-2 text-xs font-semibold text-amber-700 hover:bg-amber-100 transition"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.97 }}
+            >
+              ↻ Retry
+            </motion.button>
+          )}
           <motion.button
             onClick={onDetails}
             className="inline-flex items-center gap-2 rounded-md border border-accent/40 px-4 py-2 text-xs font-semibold text-primary hover:bg-accent/20 transition"

@@ -113,6 +113,10 @@ export function CampaignsProvider({ children }) {
     }
   }, [selectedScriptId])
 
+  const retryCampaign = useCallback(async (id) => {
+    return startCampaign(id, { retryAll: true })
+  }, [startCampaign])
+
   const createCall = useCallback(async (payload) => {
     setLoading(true)
     setError(null)
@@ -167,7 +171,8 @@ export function CampaignsProvider({ children }) {
     loadCalls,
     createCampaign,
     createCall,
-    startCampaign,
+  startCampaign,
+  retryCampaign,
     deleteCampaign
   }), [campaigns, calls, loading, error, loadCampaigns, loadCalls, createCampaign, createCall, startCampaign, deleteCampaign])
 

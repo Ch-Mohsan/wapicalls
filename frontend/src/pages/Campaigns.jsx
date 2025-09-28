@@ -11,7 +11,7 @@ import { ApiClient } from '../store/apiClient.js'
 function Campaigns() {
   const [query, setQuery] = useState('')
   const [status, setStatus] = useState('')
-  const { campaigns, loading, error, loadCampaigns, deleteCampaign, startCampaign } = useCampaigns()
+  const { campaigns, loading, error, loadCampaigns, deleteCampaign, startCampaign, retryCampaign } = useCampaigns()
   const { showError, showSuccess } = useToast()
 
   useEffect(() => {
@@ -44,9 +44,16 @@ function Campaigns() {
     if (startingId) return
     setStartingId(campaignId)
     try {
-      const res = await startCampaign(campaignId)
-      const count = res?.data?.data?.count || 0
-      showSuccess(`Campaign started: queued ${count} call(s).`)
+        const res = await startCampaign(campaignId)
+        const queued = res?.data?.data?.queued ?? 0
+        const skipped = res?.data?.data?.skipped ?? 0
+        const failed = res?.data?.data?.failed ?? 0
+        const msg = res?.data?.message || (queued ? 'Campaign started' : 'No contacts queued')
+        if (queued > 0) {
+          showSuccess(`${msg}: queued ${queued}. ${skipped ? `Skipped ${skipped}. ` : ''}${failed ? `Failed ${failed}.` : ''}`)
+        } else {
+          showError(`${msg}. ${skipped ? `Skipped ${skipped}. ` : ''}${failed ? `Failed ${failed}.` : ''}`)
+        }
       // kick off first refresh
       fetchResults(campaignId)
     } catch (e) {
@@ -140,7 +147,7 @@ function Campaigns() {
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.5 + index * 0.1, duration: 0.5 }}
             >
-              <CampaignCard 
+                <CampaignCard 
                 campaign={{
                   id: c.id,
                   name: c.name,
@@ -152,6 +159,13 @@ function Campaigns() {
                 starting={startingId === c.id}
                 buckets={liveStats[c.id]}
                 onStart={() => handleStartCampaign(c.id)}
+                  onRetry={() => retryCampaign(c.id).then(res => {
+                    const queued = res?.data?.data?.queued || 0;
+                    const skipped = res?.data?.data?.skipped || 0;
+                    const failed = res?.data?.data?.failed || 0;
+                    if (queued > 0) showSuccess(`Retry queued ${queued}. ${skipped ? `Skipped ${skipped}. ` : ''}${failed ? `Failed ${failed}.` : ''}`)
+                    else showError(`Retry: no calls queued. ${skipped ? `Skipped ${skipped}. ` : ''}${failed ? `Failed ${failed}.` : ''}`)
+                  }).catch(e => showError(e?.message || 'Retry failed'))}
                 onDetails={() => setDetailsId(c.id)}
                 onDelete={() => handleDeleteCampaign(c.id)}
               />
