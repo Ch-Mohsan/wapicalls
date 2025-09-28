@@ -86,7 +86,12 @@ export const startCampaign = async (req, res) => {
       try {
         const s = await Script.findById(scriptId).lean();
         if (s?.systemMessage) scriptSystemMessage = s.systemMessage;
-      } catch {}
+        else if (s?.content) scriptSystemMessage = s.content; // fallback to content
+        if (!s) console.warn('[VAPI] Script not found for id', scriptId);
+        else if (!scriptSystemMessage) console.warn('[VAPI] Script has no systemMessage/content for id', scriptId);
+      } catch (e) {
+        console.warn('[VAPI] Failed to load script for campaign start:', e.message);
+      }
     } else if (campaign && typeof campaign.script === 'string' && campaign.script.trim()) {
       // Fallback: use campaign.script text if present (legacy campaigns)
       scriptSystemMessage = campaign.script.trim();
@@ -95,13 +100,7 @@ export const startCampaign = async (req, res) => {
     const envOverrides = getAssistantOverridesFromEnv();
     const mergedBase = { ...envOverrides, ...assistantOverrides };
     const defaultGreeting = process.env.VAPI_FIRST_MESSAGE || "Hello! This is your AI assistant calling.";
-    if (scriptSystemMessage) {
-      const prefix = `Please follow these instructions for this campaign call:\n${scriptSystemMessage}`;
-      mergedBase.firstMessage = `${prefix}\n\n${mergedBase.firstMessage || defaultGreeting}`;
-    } else if (!mergedBase.firstMessage) {
-      mergedBase.firstMessage = defaultGreeting;
-    }
-    const safeOverrides = sanitizeAssistantOverrides(mergedBase);
+    if (!mergedBase.firstMessage) mergedBase.firstMessage = defaultGreeting;
 
     const results = [];
     for (const c of contacts) {
@@ -113,14 +112,40 @@ export const startCampaign = async (req, res) => {
 
       let vapiResponse = { id: `mock_${Date.now()}_${Math.random().toString(36).slice(2)}` };
       if (USE_VAPI) {
-        const payload = {
-          type: 'outboundPhoneCall',
-          assistantId: ASSISTANT_ID,
-          phoneNumberId: PHONE_NUMBER_ID,
-          customer: { number: formatted, name: c.name }
-        };
-        if (Object.keys(safeOverrides).length > 0) payload.assistantOverrides = safeOverrides;
         try {
+          let payload;
+          if (scriptSystemMessage) {
+            const provider = process.env.VAPI_MODEL_PROVIDER || 'openai';
+            const model = process.env.VAPI_MODEL_NAME || 'gpt-4o-mini';
+            const temperature = process.env.VAPI_MODEL_TEMPERATURE ? Number(process.env.VAPI_MODEL_TEMPERATURE) : 0.7;
+            payload = {
+              type: 'outboundPhoneCall',
+              assistant: {
+                name: 'Dynamic Campaign Assistant',
+                model: {
+                  provider,
+                  model,
+                  messages: [ { role: 'system', content: scriptSystemMessage } ],
+                  temperature,
+                },
+                voice: mergedBase.voice,
+                firstMessage: mergedBase.firstMessage,
+              },
+              phoneNumberId: PHONE_NUMBER_ID,
+              customer: { number: formatted, name: c.name }
+            };
+            console.log('[VAPI] Campaign transient assistant applied script length:', scriptSystemMessage.length, 'for contact', c._id?.toString?.());
+          } else {
+            const safeOverrides = sanitizeAssistantOverrides(mergedBase);
+            payload = {
+              type: 'outboundPhoneCall',
+              assistantId: ASSISTANT_ID,
+              phoneNumberId: PHONE_NUMBER_ID,
+              customer: { number: formatted, name: c.name }
+            };
+            if (Object.keys(safeOverrides).length > 0) payload.assistantOverrides = safeOverrides;
+            console.log('[VAPI] Campaign using stored assistantId with overrides keys:', Object.keys(safeOverrides));
+          }
           vapiResponse = await createOutboundCall(payload);
         } catch (err) {
           results.push({ contactId: c._id, status: 'failed', reason: err.message });

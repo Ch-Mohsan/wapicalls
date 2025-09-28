@@ -28,84 +28,79 @@ export default function CampaignCard({ campaign, onStart, onDetails, onDelete, s
   }
 
   return (
-    <Card>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0">
-          <div className="truncate text-lg font-semibold text-primary" title={name}>{name}</div>
-          <div className="mt-0.5 text-xs text-slate-600 truncate" title={id}>ID: {id}</div>
+    <Card className="p-0">
+      <div className="p-6 flex flex-col gap-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            <div className="truncate text-xl font-semibold text-primary tracking-tight" title={name}>{name}</div>
+            <div className="mt-1 text-xs font-medium text-slate-500 truncate" title={id}>ID: {id}</div>
+          </div>
+          <Badge variant={badgeVariant}>
+            {status}
+          </Badge>
         </div>
-        <Badge variant={badgeVariant}>{status}</Badge>
-      </div>
 
-      <div className="mt-4">
-        <div className="mb-1 flex items-center justify-between text-xs">
-          <span className="text-slate-600">Progress</span>
-          <span className="font-medium text-primary">{progress}%</span>
+        <div>
+          <div className="mb-2 flex items-center justify-between text-[11px] uppercase tracking-wide font-medium text-slate-600">
+            <span>Progress</span>
+            <span className="text-primary text-xs normal-case font-semibold">{progress}%</span>
+          </div>
+          <ProgressBar value={progress} />
         </div>
-        <ProgressBar value={progress} />
-      </div>
 
-      <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <div className="grid grid-cols-2 gap-6 order-2 lg:order-1">
-          <div>
-            <div className="text-xl font-semibold text-primary">{totalCalls}</div>
-            <div className="text-xs text-slate-600">Calls</div>
+        <div className="grid gap-5 md:grid-cols-5">
+          <div className="col-span-2 grid grid-cols-2 gap-6">
+            <div>
+              <div className="text-3xl font-bold text-primary leading-none">{totalCalls}</div>
+              <div className="mt-1 text-xs font-medium text-slate-600">Calls</div>
+            </div>
+            <div>
+              <div className="text-3xl font-bold text-primary leading-none">{successRate}%</div>
+              <div className="mt-1 text-xs font-medium text-slate-600">Success</div>
+            </div>
           </div>
-          <div>
-            <div className="text-xl font-semibold text-primary">{successRate}%</div>
-            <div className="text-xs text-slate-600">Success</div>
-          </div>
-        </div>
-        <div className="grid grid-cols-4 gap-3 text-center order-1 lg:order-2">
-          <div className="rounded-md border border-accent/40 p-2">
-            <div className="text-[10px] uppercase tracking-wide text-slate-600">Initiated</div>
-            <div className="text-sm font-semibold text-primary">{b.initiated}</div>
-          </div>
-          <div className="rounded-md border border-accent/40 p-2">
-            <div className="text-[10px] uppercase tracking-wide text-slate-600">Ringing</div>
-            <div className="text-sm font-semibold text-primary">{b.ringing}</div>
-          </div>
-          <div className="rounded-md border border-accent/40 p-2">
-            <div className="text-[10px] uppercase tracking-wide text-slate-600">In Process</div>
-            <div className="text-sm font-semibold text-primary">{b.inProgress}</div>
-          </div>
-          <div className="rounded-md border border-accent/40 p-2">
-            <div className="text-[10px] uppercase tracking-wide text-slate-600">Ended</div>
-            <div className="text-sm font-semibold text-primary">{b.ended}</div>
+          <div className="md:col-span-3 grid grid-cols-4 gap-3">
+            {[
+              { label: 'Initiated', value: b.initiated },
+              { label: 'Ringing', value: b.ringing },
+              { label: 'In Process', value: b.inProgress },
+              { label: 'Ended', value: b.ended },
+            ].map(stat => (
+              <div key={stat.label} className="rounded-lg border border-accent/40 bg-white/60 p-3 flex flex-col items-center justify-center shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+                <div className="text-[9px] font-semibold uppercase tracking-wide text-slate-500 mb-1 text-center leading-tight">{stat.label}</div>
+                <div className="text-lg font-semibold text-primary leading-none">{stat.value}</div>
+              </div>
+            ))}
           </div>
         </div>
-      </div>
 
-      <div className="mt-4 flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-3 pt-2">
           <motion.button
             onClick={onStart}
             disabled={starting}
-            className="inline-flex items-center gap-1.5 rounded-md bg-secondary px-3 py-1.5 text-xs font-medium text-white hover:opacity-95 disabled:opacity-60"
-            whileHover={{ scale: 1.03 }}
+            className="inline-flex items-center gap-2 rounded-md bg-secondary px-4 py-2 text-xs font-semibold text-white shadow hover:shadow-md transition disabled:opacity-60"
+            whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.97 }}
-            aria-label="Start Campaign"
           >
-            <Icon name="play" className="h-3.5 w-3.5" /> {starting ? 'Starting…' : 'Start'}
+            <Icon name="play" className="h-4 w-4" /> {starting ? 'Starting…' : 'Start'}
           </motion.button>
           <motion.button
             onClick={onDetails}
-            className="inline-flex items-center gap-1.5 rounded-md border border-accent/40 px-3 py-1.5 text-xs font-medium text-primary hover:bg-accent/20"
-            whileHover={{ scale: 1.03 }}
+            className="inline-flex items-center gap-2 rounded-md border border-accent/40 px-4 py-2 text-xs font-semibold text-primary hover:bg-accent/20 transition"
+            whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.97 }}
-            aria-label="View Details"
           >
-            <Icon name="info" /> Details
+            <Icon name="info" className="h-4 w-4" /> Details
           </motion.button>
           <motion.button
             onClick={onDelete}
-            className="inline-flex items-center gap-1.5 rounded-md border border-red-300 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50"
-            whileHover={{ scale: 1.03 }}
+            className="inline-flex items-center gap-2 rounded-md border border-red-300 px-4 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 transition"
+            whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.97 }}
-            aria-label="Delete Campaign"
           >
-            <Icon name="trash" /> Delete
+            <Icon name="trash" className="h-4 w-4" /> Delete
           </motion.button>
-        
+        </div>
       </div>
     </Card>
   )

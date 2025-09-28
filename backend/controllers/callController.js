@@ -295,37 +295,57 @@ export const createCall = async (req, res) => {
         if (scriptId) {
           try {
             const s = await Script.findById(scriptId).lean();
-            if (s?.systemMessage) scriptSystemMessage = s.systemMessage;
+            if (s?.systemMessage) scriptSystemMessage = s.systemMessage.trim();
           } catch (e) {
             console.warn('Failed to fetch script systemMessage:', e.message);
           }
         }
 
-        // Ensure the assistant will talk and embed systemMessage as prefix
         const defaultGreeting = process.env.VAPI_FIRST_MESSAGE || "Hello! This is your AI assistant calling.";
+        if (!mergedOverrides.firstMessage) mergedOverrides.firstMessage = defaultGreeting;
+
+        let payload;
         if (scriptSystemMessage) {
-          const prefix = `Please follow these instructions for this call:\n${scriptSystemMessage}`;
-          mergedOverrides.firstMessage = `${prefix}\n\n${mergedOverrides.firstMessage || defaultGreeting}`;
-          // Do NOT set unsupported keys
-        } else if (!mergedOverrides.firstMessage) {
-          mergedOverrides.firstMessage = defaultGreeting;
-        }
-
-        const safeOverrides = sanitizeAssistantOverrides(mergedOverrides);
-
-        const payload = {
-          type: "outboundPhoneCall",
-          assistantId: ASSISTANT_ID,
-          phoneNumberId: PHONE_NUMBER_ID,
-          customer: {
-            number: formattedNumber,
-            name: resolvedName
-          },
-        };
-
-        // Only include assistantOverrides if we have overrides
-        if (Object.keys(safeOverrides).length > 0) {
-          payload.assistantOverrides = safeOverrides;
+          // Use transient assistant configuration so script becomes a system message (not spoken)
+            const provider = process.env.VAPI_MODEL_PROVIDER || 'openai';
+            const model = process.env.VAPI_MODEL_NAME || 'gpt-4o-mini';
+            const temperature = process.env.VAPI_MODEL_TEMPERATURE ? Number(process.env.VAPI_MODEL_TEMPERATURE) : 0.7;
+            // Provide a short greeting separate from instructions
+            const greeting = mergedOverrides.firstMessage;
+            // Add a compact summary at top of greeting so if model truncates system context, we still hint behavior
+            const trimmedSummary = scriptSystemMessage.slice(0, 220).replace(/\s+/g, ' ');
+            const augmentedGreeting = `Hi, this is your AI representative. ${greeting || ''}`.trim();
+            const transientAssistant = {
+              name: 'Dynamic Call Assistant',
+              model: {
+                provider,
+                model,
+                messages: [
+                  { role: 'system', content: scriptSystemMessage }
+                ],
+                temperature,
+              },
+              voice: mergedOverrides.voice, // if any from env
+              firstMessage: augmentedGreeting,
+            };
+            payload = {
+              type: 'outboundPhoneCall',
+              assistant: transientAssistant,
+              phoneNumberId: PHONE_NUMBER_ID,
+              customer: { number: formattedNumber, name: resolvedName }
+            };
+            console.log('[VAPI] Using transient assistant with system script length:', scriptSystemMessage.length);
+        } else {
+          // Fall back to stored assistant + assistantOverrides (without unsupported keys)
+          const safeOverrides = sanitizeAssistantOverrides(mergedOverrides);
+          payload = {
+            type: 'outboundPhoneCall',
+            assistantId: ASSISTANT_ID,
+            phoneNumberId: PHONE_NUMBER_ID,
+            customer: { number: formattedNumber, name: resolvedName }
+          };
+          if (Object.keys(safeOverrides).length > 0) payload.assistantOverrides = safeOverrides;
+          console.log('[VAPI] Using stored assistantId with overrides keys:', Object.keys(safeOverrides));
         }
 
         console.log("=== VAPI CALL PAYLOAD ===");
